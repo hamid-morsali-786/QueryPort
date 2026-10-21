@@ -80,6 +80,73 @@ class TestImportConfigAndArgs(unittest.TestCase):
             self.assertIn("TABLE_A", tbl_names)
             self.assertIn("TABLE_B", tbl_names)
 
+    def test_pre_validation_table_missing(self):
+        from import_sql import validate_import_plan
+        schema_metadata = {"EXISTING_TABLE": {"COL1": {"nullable": "Y", "data_default": None}}}
+        file_plan = [(Path("01_NON_EXISTENT.csv"), "NON_EXISTENT")]
+        errors = validate_import_plan(schema_metadata, file_plan)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["error_type"], "MISSING_TABLE")
+
+    def test_pre_validation_unknown_column(self):
+        from import_sql import validate_import_plan
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8") as f:
+            f.write("COL1,STRANGE_COL\n1,2\n")
+            f_path = Path(f.name)
+        schema_metadata = {
+            "MY_TABLE": {
+                "COL1": {"nullable": "Y", "data_default": None}
+            }
+        }
+        errors = validate_import_plan(schema_metadata, [(f_path, "MY_TABLE")])
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["error_type"], "UNKNOWN_COLUMN_IN_CSV")
+        f_path.unlink(missing_ok=True)
+
+    def test_pre_validation_missing_mandatory_not_null_column(self):
+        from import_sql import validate_import_plan
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8") as f:
+            f.write("COL1,COL2\nval1,val2\n")
+            f_path = Path(f.name)
+        schema_metadata = {
+            "MY_TABLE": {
+                "COL1": {"nullable": "Y", "data_default": None},
+                "COL2": {"nullable": "Y", "data_default": None},
+                "MANDATORY_COL": {"nullable": "N", "data_default": None}
+            }
+        }
+        errors = validate_import_plan(schema_metadata, [(f_path, "MY_TABLE")])
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["error_type"], "MISSING_MANDATORY_COLUMN")
+        f_path.unlink(missing_ok=True)
+
+    def test_pre_validation_not_null_with_default_passes(self):
+        from import_sql import validate_import_plan
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8") as f:
+            f.write("COL1\nval1\n")
+            f_path = Path(f.name)
+        schema_metadata = {
+            "MY_TABLE": {
+                "COL1": {"nullable": "Y", "data_default": None},
+                "CREATED_AT": {"nullable": "N", "data_default": "SYSDATE"}
+            }
+        }
+        errors = validate_import_plan(schema_metadata, [(f_path, "MY_TABLE")])
+        self.assertEqual(len(errors), 0)
+        f_path.unlink(missing_ok=True)
+
+    def test_format_validation_report(self):
+        from import_sql import format_validation_report
+        errors = [{
+            "file": "test.csv",
+            "table": "TEST_TBL",
+            "error_type": "MISSING_TABLE",
+            "details": "Table does not exist"
+        }]
+        report = format_validation_report(errors)
+        self.assertIn("PRE-IMPORT VALIDATION REPORT", report)
+        self.assertIn("MISSING_TABLE", report)
+
 
 if __name__ == "__main__":
     unittest.main()

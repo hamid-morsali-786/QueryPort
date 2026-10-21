@@ -82,6 +82,119 @@ def discover_import_files(input_path: Path) -> list[tuple[Path, str]]:
     return []
 
 
+def fetch_schema_metadata(conn, target_schema: str) -> dict[str, dict[str, dict]]:
+    """
+    Fetch table and column metadata for the target schema from ALL_TAB_COLS.
+    Returns: {TABLE_NAME: {COLUMN_NAME: {"data_type": str, "nullable": str, "data_default": str|None}}}
+    """
+    metadata: dict[str, dict[str, dict]] = {}
+    schema_upper = target_schema.strip().upper()
+    sql = """
+    SELECT 
+        c.TABLE_NAME, 
+        c.COLUMN_NAME, 
+        c.DATA_TYPE, 
+        c.NULLABLE, 
+        c.DATA_DEFAULT
+    FROM ALL_TAB_COLS c
+    JOIN ALL_TABLES t ON c.OWNER = t.OWNER AND c.TABLE_NAME = t.TABLE_NAME
+    WHERE c.OWNER = :target_schema
+      AND c.HIDDEN_COLUMN = 'NO'
+    ORDER BY c.TABLE_NAME, c.COLUMN_ID
+    """
+    with conn.cursor() as cursor:
+        cursor.execute(sql, target_schema=schema_upper)
+        for tbl, col, dtype, nullable, default_val in cursor.fetchall():
+            tbl_up = tbl.upper()
+            col_up = col.upper()
+            if tbl_up not in metadata:
+                metadata[tbl_up] = {}
+            def_str = str(default_val).strip() if default_val is not None else None
+            metadata[tbl_up][col_up] = {
+                "data_type": dtype,
+                "nullable": nullable,
+                "data_default": def_str
+            }
+    return metadata
+
+
+def validate_import_plan(schema_metadata: dict, file_plan: list[tuple[Path, str]]) -> list[dict]:
+    """
+    Validate that each file's target table exists, CSV headers match Oracle columns,
+    and no mandatory NOT NULL column without a DEFAULT is omitted from the CSV.
+    Returns a list of error dictionaries.
+    """
+    errors: list[dict] = []
+    for file_path, table_name in file_plan:
+        tbl_upper = table_name.upper()
+        if tbl_upper not in schema_metadata:
+            errors.append({
+                "file": file_path.name,
+                "table": tbl_upper,
+                "error_type": "MISSING_TABLE",
+                "details": f"Target table '{tbl_upper}' does not exist in target database schema."
+            })
+            continue
+
+        table_cols = schema_metadata[tbl_upper]
+        
+        try:
+            with open(file_path, "r", encoding="utf-8-sig", newline="", errors="replace") as f:
+                reader = csv.reader(f)
+                headers = [h.strip().upper() for h in next(reader)]
+        except Exception as exc:
+            errors.append({
+                "file": file_path.name,
+                "table": tbl_upper,
+                "error_type": "CORRUPT_CSV",
+                "details": f"Could not read CSV headers: {exc}"
+            })
+            continue
+
+        for h in headers:
+            if h not in table_cols:
+                errors.append({
+                    "file": file_path.name,
+                    "table": tbl_upper,
+                    "error_type": "UNKNOWN_COLUMN_IN_CSV",
+                    "details": f"CSV contains column '{h}' which does not exist in table '{tbl_upper}'."
+                })
+
+        header_set = set(headers)
+        for col_name, col_meta in table_cols.items():
+            if col_name not in header_set:
+                if col_meta.get("nullable") == "N" and not col_meta.get("data_default"):
+                    errors.append({
+                        "file": file_path.name,
+                        "table": tbl_upper,
+                        "error_type": "MISSING_MANDATORY_COLUMN",
+                        "details": f"Column '{col_name}' is NOT NULL in database without a DEFAULT value, but is missing from CSV."
+                    })
+    return errors
+
+
+def format_validation_report(errors: list[dict]) -> str:
+    """Format validation errors into a structured user-facing report."""
+    if not errors:
+        return "[OK] Pre-import schema validation passed successfully."
+    
+    lines = [
+        "================================================================================",
+        "                    PRE-IMPORT VALIDATION REPORT (FAILED)",
+        "================================================================================",
+        f"[!] {len(errors)} issue(s) detected across target schema. No modifications were made.",
+        ""
+    ]
+    for idx, err in enumerate(errors, 1):
+        lines.append(f"[{idx:02d}] File: {err.get('file')} | Table: {err.get('table')}")
+        lines.append(f"     Type   : {err.get('error_type')}")
+        lines.append(f"     Details: {err.get('details')}")
+        lines.append("")
+    lines.append("================================================================================")
+    lines.append("[ABORT] Import cancelled. Please align CSV files with database schema.")
+    return "\n".join(lines)
+
+
 def load_import_config(config_path: str = "import_config.json") -> dict:
     """Load database credentials and import settings from JSON config file."""
     cfg_file = Path(config_path)
