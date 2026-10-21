@@ -30,6 +30,56 @@ class TestImportConfigAndArgs(unittest.TestCase):
         args = parse_import_args(["--dry-run"])
         self.assertTrue(args.dry_run)
 
+    def test_extract_table_name(self):
+        from import_sql import extract_table_name
+        self.assertEqual(extract_table_name("02_BANKPARAMETERS.csv"), "BANKPARAMETERS")
+        self.assertEqual(extract_table_name("04_CALENDER.csv"), "CALENDER")
+        self.assertEqual(extract_table_name("CUSTOMERS.csv"), "CUSTOMERS")
+        self.assertEqual(extract_table_name("01_SUB_SYS_TABLE.CSV"), "SUB_SYS_TABLE")
+
+    def test_clean_cell_value(self):
+        from import_sql import clean_cell_value
+        import datetime
+        self.assertIsNone(clean_cell_value(""))
+        self.assertIsNone(clean_cell_value("   "))
+        self.assertEqual(clean_cell_value("IRR"), "IRR")
+        dt = clean_cell_value("1995-01-01 00:00:00", col_type="DATE")
+        self.assertEqual(dt, datetime.datetime(1995, 1, 1, 0, 0, 0))
+
+    def test_stream_csv_batches(self):
+        from import_sql import stream_csv_batches
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8-sig") as f:
+            f.write("ID,NAME\n1,A\n2,B\n3,C\n4,D\n5,E\n")
+            csv_path = Path(f.name)
+        
+        batches = list(stream_csv_batches(csv_path, batch_size=2))
+        self.assertEqual(len(batches), 3)
+        headers, rows1 = batches[0]
+        self.assertEqual(headers, ["ID", "NAME"])
+        self.assertEqual(len(rows1), 2)
+        _, rows2 = batches[1]
+        self.assertEqual(len(rows2), 2)
+        _, rows3 = batches[2]
+        self.assertEqual(len(rows3), 1)
+        csv_path.unlink(missing_ok=True)
+
+    def test_discover_import_files(self):
+        from import_sql import discover_import_files
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            sub1 = root / "folder1"
+            sub1.mkdir()
+            f1 = sub1 / "01_TABLE_A.csv"
+            f1.write_text("COL1\n1\n", encoding="utf-8")
+            f2 = root / "02_TABLE_B.csv"
+            f2.write_text("COL2\n2\n", encoding="utf-8")
+
+            discovered = discover_import_files(root)
+            self.assertEqual(len(discovered), 2)
+            tbl_names = [t[1] for t in discovered]
+            self.assertIn("TABLE_A", tbl_names)
+            self.assertIn("TABLE_B", tbl_names)
+
 
 if __name__ == "__main__":
     unittest.main()

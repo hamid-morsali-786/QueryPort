@@ -5,9 +5,81 @@ and bulk inserts data using oracledb Thin mode with configurable commit strategi
 """
 
 import argparse
+import csv
+import datetime
 import json
+import re
 import sys
 from pathlib import Path
+from typing import Any, Generator
+
+
+def extract_table_name(file_name: str) -> str:
+    """Extract clean Oracle table name from CSV filename, stripping numeric prefix and extension."""
+    stem = Path(file_name).stem
+    match = re.match(r"^\d+_(.+)$", stem)
+    tbl = match.group(1) if match else stem
+    return tbl.strip().upper()
+
+
+def clean_cell_value(val: str, col_type: str | None = None) -> Any:
+    """Clean and cast a single CSV cell value according to Oracle expectations."""
+    if val is None:
+        return None
+    s = val.strip()
+    if not s:
+        return None
+
+    if col_type and ("DATE" in col_type.upper() or "TIMESTAMP" in col_type.upper()):
+        for fmt in (
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M:%S.%f",
+            "%Y/%m/%d %H:%M:%S",
+            "%Y/%m/%d",
+            "%Y-%m-%d",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S.%f",
+        ):
+            try:
+                return datetime.datetime.strptime(s, fmt)
+            except ValueError:
+                continue
+    return s
+
+
+def stream_csv_batches(file_path: Path, batch_size: int = 5000) -> Generator[tuple[list[str], list[list[Any]]], None, None]:
+    """
+    Generator streaming CSV rows in chunked batches of batch_size with O(1) memory.
+    Yields (headers, list_of_raw_rows).
+    """
+    with open(file_path, "r", encoding="utf-8-sig", newline="", errors="replace") as f:
+        reader = csv.reader(f)
+        try:
+            raw_headers = next(reader)
+        except StopIteration:
+            return
+        headers = [h.strip().upper() for h in raw_headers]
+        batch = []
+        for row in reader:
+            batch.append(row)
+            if len(batch) >= batch_size:
+                yield headers, batch
+                batch = []
+        if batch:
+            yield headers, batch
+
+
+def discover_import_files(input_path: Path) -> list[tuple[Path, str]]:
+    """
+    Discover all target CSV files and their inferred table names.
+    Returns sorted list of (file_path, table_name).
+    """
+    if input_path.is_file():
+        return [(input_path, extract_table_name(input_path.name))]
+    elif input_path.is_dir():
+        files = sorted(input_path.glob("**/*.csv"), key=lambda p: str(p).lower())
+        return [(p, extract_table_name(p.name)) for p in files]
+    return []
 
 
 def load_import_config(config_path: str = "import_config.json") -> dict:
