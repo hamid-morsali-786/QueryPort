@@ -1,0 +1,35 @@
+import unittest
+import tempfile
+import json
+from pathlib import Path
+from import_sql import load_import_config, parse_import_args, resolve_import_settings
+
+class TestImportConfigAndArgs(unittest.TestCase):
+    def test_load_import_config_defaults(self):
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".json") as f:
+            json.dump({
+                "database": {"user": "APP_USER", "password": "pwd", "host": "127.0.0.1", "port": 1521, "service_name": "XE", "schema": "CORE"},
+                "import_settings": {"input_path": "imports", "commit_mode": "batch", "batch_size": 5000, "existing_data_action": "append", "on_error": "abort"}
+            }, f)
+            cfg_path = f.name
+        
+        cfg = load_import_config(cfg_path)
+        self.assertEqual(cfg["database"]["user"], "APP_USER")
+        self.assertEqual(cfg["import_settings"]["commit_mode"], "batch")
+        
+        args = parse_import_args(["--commit-mode", "all", "--batch-size", "2000", "--existing-data", "truncate", "--on-error", "skip_and_log", "--schema", "CUSTOM_SCHEMA"])
+        settings = resolve_import_settings(args, cfg)
+        self.assertEqual(settings["commit_mode"], "all")
+        self.assertEqual(settings["batch_size"], 2000)
+        self.assertEqual(settings["existing_data_action"], "truncate")
+        self.assertEqual(settings["on_error"], "skip_and_log")
+        self.assertEqual(settings["database"]["schema"], "CUSTOM_SCHEMA")
+        Path(cfg_path).unlink(missing_ok=True)
+
+    def test_dry_run_flag(self):
+        args = parse_import_args(["--dry-run"])
+        self.assertTrue(args.dry_run)
+
+
+if __name__ == "__main__":
+    unittest.main()
