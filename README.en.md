@@ -1,7 +1,7 @@
 <div align="center">
 
 # QueryPort
-### Ultra-fast, lightweight, and standalone data export utility for Oracle Database to CSV and SQL Insert formats
+### High-performance, lightweight, and standalone bidirectional data engine for Oracle Database: SQL Exporter & Bulk CSV Importer
 
 [![GitHub Stars](https://img.shields.io/github/stars/hamid-morsali-786/QueryPort?style=for-the-badge&color=e8590c)](https://github.com/hamid-morsali-786/QueryPort/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/hamid-morsali-786/QueryPort?style=for-the-badge&color=f59e0b)](https://github.com/hamid-morsali-786/QueryPort/network/members)
@@ -29,9 +29,9 @@
 - [Feature Comparison Matrix](#-feature-comparison-matrix)
 - [System Architecture](#-system-architecture)
 - [Installation & Quick Start](#-installation--quick-start)
-- [Standalone Portable Executable](#-standalone-portable-executable)
-- [Interactive Console Mode](#-interactive-console-mode)
-- [Configuration Guide (config.json)](#-configuration-guide-configjson)
+- [Unified Interactive Console Mode](#-unified-interactive-console-mode)
+- [CSV Importer Subsystem](#-csv-importer-subsystem)
+- [Configuration Guides (config.json & import_config.json)](#-configuration-guides)
 - [CLI Reference](#-cli-reference)
 - [Ready-to-Run Cheat Sheet](#-ready-to-run-cheat-sheet)
 - [Testing & Quality Assurance](#-testing--quality-assurance)
@@ -41,33 +41,48 @@
 
 ## 🎯 Introduction & Why QueryPort?
 
-In enterprise environments, data migrations, testing, and analytics pipelines, database administrators and engineers frequently extract datasets from Oracle Database to **CSV** and **SQL INSERT** scripts. Traditional workflows suffer from major pain points:
+In enterprise data migrations, testing pipelines, and cross-system integration, database administrators and engineers frequently face two symmetrical challenges:
+1. **Bulk Data Extraction (Export):** Exporting results of complex queries from Oracle Database to Excel-friendly CSV and production-ready SQL INSERT scripts.
+2. **Bulk Data Ingestion (Import):** Loading large CSV datasets into Oracle Database tables with strict pre-execution schema validation, flexible transaction commits, and error logging.
 
-- ❌ **Heavy Client Dependencies:** Traditional tools require cumbersome Oracle Client / Oracle Instant Client installations, environment variables, and `tnsnames.ora` setup.
-- ❌ **Memory Out-of-Memory (OOM) Crashes:** Loading millions of rows into memory using naive `fetchall()` approaches crashes processes.
-- ❌ **Corrupted Multilingual / RTL Characters in Excel:** CSV exports often miss UTF-8 BOM, causing Excel to mangle Persian, Arabic, and Unicode text.
-- ❌ **Broken SQL INSERT Scripts:** Quoting issues, substitution variable errors (`&`), missing `SET DEFINE OFF`, and truncated timestamps.
+Traditional tools often mandate heavy Oracle Client / Instant Client installations, crash on large datasets due to memory leaks, corrupt Persian/Arabic/Unicode text in Excel, or fail silently during imports without validating required constraints.
 
-**QueryPort** is built to solve all of these challenges. It requires **zero Oracle Client installation**, connects directly via Oracle's native **Thin Mode**, streams queries in chunked buffers with constant memory $O(1)$, and comes with an interactive console and portable binary.
+**QueryPort** is a zero-dependency, portable bidirectional utility powered directly by Oracle's official **Thin Mode** driver. It delivers constant memory streaming $O(1)$, comprehensive data dictionary pre-validation, and an intuitive double-click interactive Windows console.
 
 ---
 
 ## ⚡ Key Features
 
-* 🚀 **Zero Oracle Client (Thin Mode):** 100% direct TCP/IP network connection via `python-oracledb`. No Oracle Instant Client or DLLs needed.
-* 💾 **Constant Memory Streaming $O(1)$:** Streams rows using `fetchmany` to handle millions of rows without RAM pressure.
+### 🔹 Core Capabilities:
+* 🚀 **Zero Oracle Client (Thin Mode):** 100% direct TCP/IP network connection via `python-oracledb`. No Instant Client, DLLs, or `tnsnames.ora` required.
+* 💾 **Constant Memory Streaming $O(1)$:** Streams batches in chunks to process millions of rows without RAM pressure.
+* 🛡️ **Schema Decoupling (`schema`):** Switch `CURRENT_SCHEMA` independently of the authentication user.
+* 🖥️ **Unified Interactive Windows Console:** Double-click support for Windows without sudden terminal closing, offering easy selection between Export and Import workflows.
+* 📦 **Portable Standalone Binary (`QueryPort.exe`):** Single executable ready for production servers without Python installed.
+
+### 📤 Export Engine:
 * 📂 **Automatic Folder & Query Organization:** Parses `.sql` scripts, isolates multiple queries, extracts clean table names, and numbers files sequentially.
 * 🌐 **Excel-Ready UTF-8-SIG (BOM):** Flawless Persian, Arabic, and Unicode character rendering in Microsoft Excel without import wizards.
 * 📝 **Production-Grade Oracle INSERT Scripts:**
   - Handles `NULL` literals cleanly.
   - Escapes single quotes (`'`) to `''`.
-  - Injects `SET DEFINE OFF;` to bypass SQL*Plus ampersand (`&`) variable prompts.
+  - Injects `SET DEFINE OFF;` to bypass SQL*Plus ampersand (`&`) prompts.
   - Preserves sub-second timestamps (`TO_TIMESTAMP(..., 'YYYY-MM-DD HH24:MI:SS.FF6')`).
   - Appends `COMMIT;` statements.
 * 🔍 **Pre-execution Row Count Preview (Dry Run):**
   - `--dry-run`: Counts rows quickly with `SELECT COUNT(*)` wrapper without creating disk files.
   - `--confirm`: Previews row counts and asks for interactive confirmation `[y/N]` before writing.
-* 🖥️ **Interactive Windows Console:** Double-click support for Windows without sudden terminal closing.
+
+### 📥 Import Engine:
+* 🔎 **Oracle Data Dictionary Pre-Validation:**
+  - Validates table existence in target schema (`ALL_TABLES`).
+  - Verifies 100% of CSV headers exist as columns in the Oracle table (`ALL_TAB_COLS`).
+  - Detects `NOT NULL` columns missing from the CSV that lack a `DATA_DEFAULT`, aborting before any data is modified.
+* ⚡ **Bulk Parameterized Ingestion:** High-speed `cursor.executemany` with bound variables.
+* 🔄 **Flexible Commit Strategies:** `batch` (e.g. every 5,000 rows), `row` (row-by-row), or `all` (single commit per table).
+* 🧹 **Existing Data Management:** `append`, `truncate` (`TRUNCATE TABLE`), or `skip`.
+* 📝 **Resilient Error Logging:** Optional `skip_and_log` mode saves rejected rows with line numbers and Oracle error messages to `import_errors/<TABLE>_rejected.csv`.
+* 📊 **Summary Metrics:** Execution duration, records imported, failed, and ingestion rate (rows/sec).
 
 ---
 
@@ -78,9 +93,10 @@ In enterprise environments, data migrations, testing, and analytics pipelines, d
 | **Zero Installation / Portable EXE** | ✅ Yes (Single binary) | ❌ No (Requires JDK) | ❌ No (Requires Python env) | ❌ No (Requires Java) |
 | **No Oracle Client / Instant Client** | ✅ Yes (Thin Mode) | ⚠️ Usually needed | ⚠️ Deprecating cx_Oracle | ⚠️ Needs JDBC jar |
 | **Low Memory Streaming** | ✅ Batch streaming | ❌ High memory usage | ❌ Usually `fetchall()` | ⚠️ Manual Fetch Size |
-| **Automatic Persian / Unicode Excel BOM**| ✅ UTF-8-SIG by default | ❌ Manual codepage | ⚠️ Requires custom logic | ❌ Manual |
-| **Pre-execution Row Count Preview** | ✅ `--dry-run` & `--confirm` | ❌ No | ❌ No | ❌ No |
-| **Oracle INSERT with `SET DEFINE OFF`** | ✅ Automated | ⚠️ Manual export | ❌ Needs custom builder | ⚠️ Wizard dependent |
+| **Automatic Unicode / Excel BOM** | ✅ UTF-8-SIG by default | ❌ Manual codepage | ⚠️ Requires custom logic | ❌ Manual |
+| **Data Dictionary Pre-Validation** | ✅ Strict pre-check | ❌ During import | ❌ Rare | ⚠️ Basic |
+| **Commit Modes (Batch / Row / All)** | ✅ Configurable | ⚠️ Limited | ❌ Needs custom code | ⚠️ Limited |
+| **Bad-Row CSV Error Export** | ✅ Built-in | ⚠️ Manual review | ❌ Needs custom logging | ⚠️ Manual review |
 
 ---
 
@@ -88,30 +104,53 @@ In enterprise environments, data migrations, testing, and analytics pipelines, d
 
 ```mermaid
 flowchart TD
-    SQLFile["Input SQL Script<br/>(.sql Files)"] --> Parser["QueryPort SQL Engine<br/>(Comment Stripper, SQL*Plus Cleaner, Table Parser)"]
-    
-    subgraph QueryPort Processing Pipeline
-        Parser --> Queries["Individual Cleaned Queries"]
-        Queries --> ModeCheck{"Execution Mode"}
-        
-        ModeCheck -- "--dry-run" --> CountQuery["Wrap into SELECT COUNT(*)"]
-        CountQuery --> DBCount["Execute Fast Count on Oracle DB"]
-        DBCount --> CLIReport["Display Summary & Row Counts"]
-        
-        ModeCheck -- "Standard Export" --> RunQuery["Execute Query"]
-        RunQuery --> StreamEngine["Chunked Streaming Engine<br/>(cursor.fetchmany)"]
+    subgraph Inputs and Configurations
+        SQLIn["SQL Scripts (.sql)"]
+        CSVIn["CSV Datasets (.csv)"]
+        ConfigExp["Export Config<br/>config.json"]
+        ConfigImp["Import Config<br/>import_config.json"]
     end
 
-    Config["config.json"] --> Conn["oracledb Thin Mode Driver"]
-    Conn --> RunQuery
-    Conn --> DBCount
-    Oracle[("Oracle Database Server<br/>19c / 21c / 23ai")] <--> Conn
+    subgraph QueryPort Dual Engine
+        CLI["Unified CLI & Interactive Console"]
+        
+        subgraph Export Engine
+            Parser["SQL Parser & Comment Cleaner"]
+            StreamExp["Chunked Streaming (fetchmany)"]
+            CSVGen["UTF-8-SIG CSV Generator"]
+            SQLGen["Oracle INSERT Generator"]
+        end
 
-    StreamEngine --> CSVWriter["UTF-8-SIG CSV Writer"]
-    StreamEngine --> SQLWriter["Oracle INSERT Script Writer"]
+        subgraph Import Engine
+            Validator["Data Dictionary Validator<br/>(ALL_TABLES & ALL_TAB_COLS)"]
+            Cleaner["Type & Date Sanitizer"]
+            Batcher["Bulk Ingestion (executemany)"]
+            ErrLog["Rejected Rows CSV Logger"]
+        end
+    end
 
-    CSVWriter --> CSVOut[("Exported .csv")]
-    SQLWriter --> SQLOut[("Exported _insert.sql")]
+    subgraph Oracle Database
+        Oracle[("Oracle Database Server<br/>Thin Mode Driver (Zero Client)")]
+    end
+
+    ConfigExp --> CLI
+    ConfigImp --> CLI
+    SQLIn --> Parser
+    CSVIn --> Validator
+
+    CLI --> Parser
+    CLI --> Validator
+
+    Parser --> StreamExp
+    StreamExp <-->|"Fetch Batches"| Oracle
+    StreamExp --> CSVGen
+    StreamExp --> SQLGen
+
+    Validator <-->|"Validate Schema & NOT NULLs"| Oracle
+    Validator --> Cleaner
+    Cleaner --> Batcher
+    Batcher -->|"Bulk Parameterized Insert"| Oracle
+    Batcher -.->|"On Error (skip_and_log)"| ErrLog
 ```
 
 ---
@@ -119,7 +158,7 @@ flowchart TD
 ## 📦 Installation & Quick Start
 
 ### 1. Standalone Binary (Recommended for Production)
-Download the latest portable release from **[Releases](https://github.com/hamid-morsali-786/QueryPort/releases)**, configure `config.json`, and run `QueryPort.exe`.
+Download the latest portable release from **[Releases](https://github.com/hamid-morsali-786/QueryPort/releases)**, configure `config.json` and/or `import_config.json`, and run `QueryPort.exe`.
 
 ### 2. From Source (Development)
 ```bash
@@ -135,61 +174,148 @@ pip install -r requirements.txt
 
 ---
 
+## 🖱️ Unified Interactive Console Mode
+
+When launching `QueryPort.exe` without arguments (e.g. double-clicking):
+
+```text
+==================================================
+           QueryPort Unified Console              
+==================================================
+Select Operation:
+  [1 / E] : Export Database queries to CSV / SQL Insert (config.json)
+  [2 / I] : Import CSV datasets into Database tables  (import_config.json)
+  [exit / q] : Exit program
+
+Enter choice [1/2] (Default: 1): 
+```
+
+---
+
+## ⚙️ Configuration Guides
+
+### 1. Export Configuration (`config.json`)
+```json
+{
+  "database": {
+    "user": "TARGET_SCHEMA",
+    "password": "your_password",
+    "host": "localhost",
+    "port": 1521,
+    "service_name": "ORCLPDB1",
+    "schema": "TARGET_SCHEMA"
+  },
+  "defaults": {
+    "input_path": "sql_queries",
+    "output_dir": "exports",
+    "format": "both",
+    "batch_size": 1000
+  }
+}
+```
+
+### 2. Import Configuration (`import_config.json`)
+```json
+{
+  "database": {
+    "user": "TARGET_SCHEMA",
+    "password": "your_password",
+    "host": "localhost",
+    "port": 1521,
+    "service_name": "ORCLPDB1",
+    "schema": "TARGET_SCHEMA"
+  },
+  "import_settings": {
+    "input_path": "imports",
+    "commit_mode": "batch",
+    "batch_size": 5000,
+    "existing_data_action": "append",
+    "on_error": "abort",
+    "bad_rows_dir": "import_errors"
+  }
+}
+```
+
+---
+
 ## 🚀 CLI Reference
 
-| Option | Short | Arguments | Description |
-| :--- | :---: | :---: | :--- |
-| `--path` | `-p` | Path | Path to a single `.sql` file or directory of `.sql` files |
-| `--schema` | `-s` | Schema | Switch session CURRENT_SCHEMA to target schema |
-| `--format` | `-f` | `both`, `csv`, `insert` | Output format (default: `both`) |
-| `--dry-run` | `-d` | Flag | Preview row counts without writing any files |
-| `--confirm` | - | Flag | Preview row counts and prompt for confirmation before export |
-| `--config` | `-c` | Path | Path to configuration file (default: `config.json`) |
-| `--output` | `-o` | Path | Output directory for exported files |
-| `--batch-size` | `-b` | Integer | Streaming buffer size (default: `1000`) |
-| `--help` | `-h` | Flag | Show command-line help |
+### 1. Export CLI Options
+Usage: `QueryPort.exe [options]` or `QueryPort.exe --mode export [options]`
+
+| Option | Short | Type | Default | Description |
+| :--- | :---: | :---: | :---: | :--- |
+| `--path` | `-p` | Path | from config | Path to a single `.sql` file or directory |
+| `--schema` | `-s` | String | from config | Switch session `CURRENT_SCHEMA` |
+| `--format` | `-f` | String | `both` | Output format (`both`, `csv`, `insert`) |
+| `--dry-run` | `-d` | Flag | - | Row count preview without disk writes |
+| `--confirm` | - | Flag | - | Preview row counts with confirmation prompt |
+| `--config` | `-c` | Path | `config.json` | Path to export config file |
+| `--output` | `-o` | Path | `exports` | Output directory |
+| `--batch-size` | `-b` | Int | `1000` | Stream fetch buffer size |
+
+### 2. Import CLI Options
+Usage: `QueryPort.exe import [options]` or `QueryPort.exe --mode import [options]`
+
+| Option | Short | Type | Default | Description |
+| :--- | :---: | :---: | :---: | :--- |
+| `--path` | `-p` | Path | `imports` | Path to CSV file or directory of CSV files |
+| `--config` | `-c` | Path | `import_config.json` | Path to import config file |
+| `--schema` | `-s` | String | from config | Target Oracle database schema |
+| `--commit-mode` | - | String | `batch` | Commit strategy: `batch`, `row`, `all` |
+| `--batch-size` | `-b` | Int | `5000` | Batch size for ingestion and commits |
+| `--existing-data` | - | String | `append` | Existing table data action: `append`, `truncate`, `skip` |
+| `--on-error` | - | String | `abort` | Error strategy: `abort`, `skip_and_log` |
+| `--bad-rows-dir` | - | Path | `import_errors` | Directory for rejected row CSV logs |
+| `--dry-run` | `-d` | Flag | - | Pre-validate metadata without writing data |
 
 ---
 
 ## 💡 Ready-to-Run Cheat Sheet
 
 ```bash
+# -------------------------------------------------------------
+# Export Operations
+# -------------------------------------------------------------
 # Preview row counts without exporting:
 QueryPort.exe --path test_sql --dry-run
-
-# Preview and confirm before running:
-QueryPort.exe --path test_sql --confirm
 
 # Export to both CSV and SQL INSERT:
 QueryPort.exe --path sql_queries --format both
 
-# Export to CSV only (Excel-friendly UTF-8 BOM):
-QueryPort.exe --path sql_queries --format csv
+# -------------------------------------------------------------
+# Import Operations
+# -------------------------------------------------------------
+# Pre-validate CSV datasets against Oracle metadata:
+QueryPort.exe import --dry-run
 
-# Custom output directory:
-QueryPort.exe --path test_sql --output D:\Backups\Exported
+# Import with batch commits of 5000 rows and truncate existing data:
+QueryPort.exe import --path imports --existing-data truncate --batch-size 5000
+
+# Import with row-by-row commit and error logging:
+QueryPort.exe import --commit-mode row --on-error skip_and_log
 ```
 
 ---
 
 ## 🧪 Testing & Quality Assurance
 
-QueryPort includes a comprehensive mock-based test suite that validates parsing, formatting, escaping, and streaming without requiring a live Oracle server:
+QueryPort includes a comprehensive mock-based test suite of 36 unit tests validating all components without needing a live Oracle database:
 
 ```bash
 pytest -v
 # or
-python -m unittest test_export_sql.py
+python -m unittest discover -v
 ```
+
+* `test_export_sql.py` (21 tests): SQL parsing, comments, escaping, UTF-8-SIG BOM, streaming, and CLI routing.
+* `test_import_sql.py` (15 tests): File discovery, cell cleaning, date parsing, data dictionary validation, commit modes, and bad-row logging.
 
 ---
 
 ## 🤝 Contributing & License
 
-Contributions are welcome! Please review:
-* [Contributing Guidelines](CONTRIBUTING.md)
-* [Code of Conduct](CODE_OF_CONDUCT.md)
-* [Security Policy](SECURITY.md)
+Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ### Author
 Developed with ❤️ by **[Hamid Morsali](https://github.com/hamid-morsali-786)**.

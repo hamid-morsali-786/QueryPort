@@ -43,6 +43,8 @@ exports/
 test_exports/
 exe_test_exports/
 my_exports/
+imports/
+import_errors/
 *.log
 
 # ==============================================================================

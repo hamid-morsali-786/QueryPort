@@ -1,64 +1,54 @@
 ================================================================================
-                    QueryPort - Oracle SQL Export Utility
+                    QueryPort - Oracle SQL Utility (Export & Import)
 ================================================================================
 
-یک ابزار سبک، ماژولار و بسیار سریع بر پایه پایتون جهت خواندن اسکریپت‌های .sql،
-اجرای دستورات SELECT روی پایگاه داده اوراکل (Oracle Database) با استفاده از
-حالت Thin Mode، و استخراج خودکار خروجی‌ها در قالب فایل‌های CSV و اسکریپت‌های
-استاندارد SQL INSERT در پوشه‌بندی‌های منظم.
+یک ابزار سبک، ماژولار و بسیار سریع بر پایه پایتون با قابلیت اجرای مستقل (بدون نیاز
+به پایتون یا اوراکل کلاینت) برای استخراج (Export) داده‌ها از دیتابیس اوراکل به قالب‌های
+CSV (سازگار با فارسی در اکسل) و اسکریپت‌های SQL INSERT، و همچنین بارگذاری و ورود
+(Import) فوق‌سریع انبوه فایل‌های CSV به جداول دیتابیس اوراکل.
 
 
 --------------------------------------------------------------------------------
 ۱. ویژگی‌های کلیدی (Key Features)
 --------------------------------------------------------------------------------
-* بدون نیاز به Oracle Client محلی (Zero Instant Client):
-  اتصال مستقیم شبکه از طریق درایور رسمی python-oracledb در حالت مدرن Thin Mode.
+* اتصال مستقیم Thin Mode (بدون کلاینت اوراکل):
+  اتصال ۱۰۰٪ شبکه‌ای بدون نیاز به Oracle Instant Client، DLLهای اوراکل یا فایل tnsnames.ora.
 
-* استریمینگ بهینه حافظه (O(1) Streaming):
-  واکشی دسته‌ای رکوردها با cursor.fetchmany جهت جلوگیری از مصرف بی‌رویه رم
-  هنگام خروجی گرفتن از جداول پر حجم.
+* استریمینگ بهینه با حافظه ثابت O(1):
+  واکشی و درج بلوکی رکوردها جهت جلوگیری از اشغال رم حتی در جداول چندمیلیون سطری.
 
-* پوشه‌بندی خودکار به ازای هر فایل:
-  ایجاد یک پوشه اختصاصی هم‌نام با هر فایل SQL و شماره‌گذاری ترتیبی نتایج کوئری‌ها
-  (مثال: 01_BANKPARAMETERS.csv و 01_BANKPARAMETERS_insert.sql).
+* کنسول تعاملی یکپارچه دوحالته:
+  منوی شروع هوشمند با پشتیبانی از دابل‌کلیک در ویندوز جهت انتخاب ساده بین حالت استخراج (Export)
+  و ورود داده (Import) بدون بسته شدن ناگهانی پنجره سیاه ترمینال.
 
-* پشتیبانی کامل از زبان فارسی در Excel:
-  ذخیره فایل‌های CSV با انکودینگ utf-8-sig (دارای UTF-8 BOM) تا متن‌ها در نرم‌افزار
-  مایکروسافت اکسل بدون بهم‌ریختگی حروف باز شوند.
+* امکانات استخراج (Export Engine):
+  - پوشه‌بندی و شماره‌گذاری خودکار به ازای هر فایل SQL و جدول.
+  - خروجی CSV با انکودینگ UTF-8-SIG و بایت‌های BOM جهت نمایش بی‌نقص متون فارسی در اکسل.
+  - تولید اسکریپت استاندارد INSERT با خنثی‌سازی تک‌کوت‌ها ('')، متغیرهای رزرو شده (&)،
+    تبدیل دقیق تاریخ‌ها (TO_DATE و TO_TIMESTAMP با دقت میکروثانیه) و دستور COMMIT.
+  - پیش‌نمایش سریع تعداد رکوردها با سوییچ --dry-run و --confirm.
 
-* تولید اسکریپت‌های استاندارد INSERT اوراکل:
-  - قالب‌بندی صحیح مقادیر NULL
-  - تبدیل مقادیر متنی و خنثی‌سازی تک‌کوت‌ها ('')
-  - درج دستور SET DEFINE OFF; برای جلوگیری از تداخل کاراکتر &
-  - تبدیل تاریخ و زمان با دقت میکروثانیه (TO_TIMESTAMP با فرمت FF6 و TO_DATE)
-  - درج عبارت COMMIT; در انتهای فایل
-
-* پیش‌نمایش تعداد رکوردها قبل از استخراج (Pre-execution Row Count Preview):
-  - فلگ --dry-run: مشاهده سریع تعداد رکوردهای هر کوئری بدون نوشتن هیچ فایلی.
-  - فلگ --confirm: مشاهده پیش‌نمایش تعداد رکوردها و درخواست تایید از کاربر
-    قبل از شروع خروجی گرفتن.
+* امکانات بارگذاری و ورود داده (Import Engine):
+  - اعتبارسنجی پیشگیرانه از متادیتای اوراکل (ALL_TABLES و ALL_TAB_COLS): کنترل وجود جدول،
+    انطباق کامل ستون‌ها، و کشف ستون‌های NOT NULL بدون مقدار پیش‌فرض قبل از لمس دیتابیس.
+  - درج دسته‌ای با سرعت بالا (cursor.executemany با بایند پارامترها).
+  - استراتژی‌های متنوع کامیت: batch (دسته‌ای)، row (سطری)، all (یکجا).
+  - سیاست‌های برخورد با داده‌های قبلی: append (الحاق)، truncate (پاکسازی)، skip (رد کردن).
+  - مدیریت خطای سطرها: abort (توقف) یا skip_and_log (ثبت رکوردهای رد شده در CSV خطا).
 
 
 --------------------------------------------------------------------------------
-۲. پیش‌نیازها و نصب (Prerequisites)
+۲. فایل‌های تنظیمات (Configuration Files)
 --------------------------------------------------------------------------------
-۱. پایتون نسخه 3.10 به بالا (Python 3.11 پیشنهاد می‌شود).
-۲. نصب درایور اوراکل:
-   pip install oracledb
-
-
---------------------------------------------------------------------------------
-۳. فایل تنظیمات (config.json)
---------------------------------------------------------------------------------
-اطلاعات اتصال به پایگاه داده و مقادیر پیش‌فرض در فایل config.json قرار دارد:
-
+الف) فایل تنظیمات استخراج (config.json):
 {
   "database": {
     "user": "TARGET_SCHEMA",
     "password": "your_password",
     "host": "localhost",
     "port": 1521,
-    "service_name": "ORCLPDB1"
+    "service_name": "ORCLPDB1",
+    "schema": "TARGET_SCHEMA"
   },
   "defaults": {
     "input_path": "test_sql",
@@ -68,193 +58,91 @@
   }
 }
 
-شرح فیلدها:
-- database.user: نام کاربری دیتابیس اوراکل
-- database.password: رمز عبور کاربر
-- database.host: آدرس سرور پایگاه داده (مثلاً localhost یا IP سرور)
-- database.port: پورت شنود اوراکل (پیش‌فرض: 1521)
-- database.service_name: نام سرویس یا دیتابیس (مانند ORCL, XE, ORCLPDB1)
-- database.schema: اسکیمای هدف اجرای کوئری‌ها (CURRENT_SCHEMA) در صورت تفاوت با یوزر لاگین
-- defaults.input_path: مسیر پیش‌فرض اسکریپت یا پوشه فایل‌های SQL
-- defaults.output_dir: نام پوشه پیش‌فرض جهت ذخیره خروجی‌ها
-- defaults.format: فرمت خروجی: "both" (هر دو)، "csv" یا "insert"
-- defaults.batch_size: تعداد رکوردهای واکشی در هر نوبت استریم (پیش‌فرض: 1000)
+ب) فایل تنظیمات ورود داده (import_config.json):
+{
+  "database": {
+    "user": "TARGET_SCHEMA",
+    "password": "your_password",
+    "host": "localhost",
+    "port": 1521,
+    "service_name": "ORCLPDB1",
+    "schema": "TARGET_SCHEMA"
+  },
+  "import_settings": {
+    "input_path": "imports",
+    "commit_mode": "batch",
+    "batch_size": 5000,
+    "existing_data_action": "append",
+    "on_error": "abort",
+    "bad_rows_dir": "import_errors"
+  }
+}
 
 
 --------------------------------------------------------------------------------
-۴. رفتار هنگام دابل‌کلیک روی فایل اجرایی (Interactive Launch)
+۳. منوی تعاملی کنسول (Interactive Console Launch)
 --------------------------------------------------------------------------------
-هنگامی که روی فایل QueryPort.exe دابل‌کلیک می‌کنید (یا آن را بدون پارامتر اجرا می‌کنید)،
-پنجره بسته نمی‌شود و منوی تعاملی زیر نمایش داده می‌شود:
+هنگام دابل‌کلیک روی QueryPort.exe منوی تعاملی زیر ظاهر می‌شود:
 
 ==================================================
-      QueryPort - Interactive Console Mode        
+           QueryPort Unified Console              
 ==================================================
-Options:
-  [Y / Enter] : Run export with default config.json settings
-  [N]         : Enter custom command mode
-  [exit / q]  : Exit program
+Select Operation:
+  [1 / E] : Export Database queries to CSV / SQL Insert (config.json)
+  [2 / I] : Import CSV datasets into Database tables  (import_config.json)
+  [exit / q] : Exit program
 
-Execute with default settings? [Y/n]: 
+Enter choice [1/2] (Default: 1): 
 
-* اگر کلید Enter یا Y را بزنید: عملیات کامل خروجی با تنظیمات config.json انجام
-  شده و در پایان پنجره برای خروج منتظر فشردن Enter می‌ماند.
-
-* اگر N را بزنید: برنامه وارد پرامپت خط فرمان (QueryPort> ) شده و منتظر دستور شما
-  می‌ماند. می‌توانید هر دستوری را وارد کنید:
-    QueryPort> --path test_sql --dry-run
-    QueryPort> .\QueryPort.exe --path test_sql --confirm
-    QueryPort> --path sql_queries --format csv
-    QueryPort> exit
+* با انتخاب 1 یا فشردن Enter: عملیات استخراج بر اساس config.json اجرا می‌شود.
+* با انتخاب 2: عملیات ورود داده بر اساس import_config.json آغاز می‌شود.
 
 
 --------------------------------------------------------------------------------
-۵. راهنمای پارامترهای خط فرمان (CLI Reference)
+۴. راهنمای پارامترهای خط فرمان (CLI Reference)
 --------------------------------------------------------------------------------
-فرمت کلی دستور:
-  QueryPort.exe [options]
-  (یا در صورت تمایل: python export_sql.py [options])
+دستور استخراج:
+  QueryPort.exe [options]  یا  QueryPort.exe --mode export [options]
+  --path, -p <مسیر>            آدرس فایل .sql یا پوشه فایل‌های SQL
+  --schema, -s <اسکیما>        تغییر CURRENT_SCHEMA سشن اوراکل
+  --format, -f <both|csv|insert>  نوع فرمت خروجی (پیش‌فرض: both)
+  --dry-run, -d               پیش‌نمایش تعداد سطرها بدون ایجاد فایل
+  --confirm                   پیش‌نمایش رکوردها و تقاضای تایید قبل از استخراج
+  --config, -c <مسیر JSON>    مسیر فایل تنظیمات (پیش‌فرض: config.json)
+  --output, -o <مسیر پوشه>    مسیر پوشه خروجی (پیش‌فرض: exports)
+  --batch-size, -b <عدد>      اندازه دسته استریم (پیش‌فرض: 1000)
 
-سوئیچ‌ها و فلگ‌ها:
-  --path, -p <مسیر>
-      آدرس یک فایل .sql مشخص یا یک پوشه حاوی چندین فایل SQL.
-  
-  --schema, -s <نام اسکیما>
-      تغییر اسکیمای جاری سشن دیتابیس (CURRENT_SCHEMA) در صورت تفاوت با یوزر اتصال.
-  
-  --format, -f <both|csv|insert>
-      انتخاب نوع خروجی‌های مورد نظر (پیش‌فرض: both).
-  
-  --dry-run, -d
-      پیش‌نمایش تعداد رکوردها: نمایش جدول شمارش سطرها بدون ساخت هیچ فایلی.
-  
-  --confirm
-      پیش‌نمایش تعاملی: نمایش تعداد رکوردها و دریافت تایید [y/N] قبل از استخراج.
-  
-  --config, -c <مسیر فایل JSON>
-      استفاده از فایل تنظیمات دلخواه (پیش‌فرض: config.json).
-  
-  --output, -o <مسیر پوشه>
-      تغییر مسیر ذخیره‌سازی فایل‌های خروجی (پیش‌فرض: exports).
-  
-  --batch-size, -b <عدد>
-      تنظیم سایز بافر واکشی استریم داده (پیش‌فرض: 1000).
-  
-  --help, -h
-      نمایش راهنمای خط فرمان.
+دستور بارگذاری:
+  QueryPort.exe import [options]  یا  QueryPort.exe --mode import [options]
+  --path, -p <مسیر>            مسیر پوشه یا فایل CSV جهت ورود داده
+  --schema, -s <اسکیما>        اسکیمای هدف جداول اوراکل
+  --commit-mode <batch|row|all> استراتژی کامیت (پیش‌فرض: batch)
+  --batch-size, -b <عدد>      تعداد رکوردهای هر بسته (پیش‌فرض: 5000)
+  --existing-data <append|truncate|skip> رفتار با داده‌های فعلی جدول (پیش‌فرض: append)
+  --on-error <abort|skip_and_log> استراتژی خطا (پیش‌فرض: abort)
+  --bad-rows-dir <مسیر>       پوشه لاگ رکوردهای رد شده (پیش‌فرض: import_errors)
+  --dry-run, -d               اعتبارسنجی متادیتا و بررسی ساختار بدون درج داده
+  --config, -c <مسیر JSON>    مسیر کانفیگ ایمپورت (پیش‌فرض: import_config.json)
 
 
 --------------------------------------------------------------------------------
-۶. دستورات آماده کپی و اجرا (Ready-to-Run Cheat Sheet)
+۵. دستورات آماده کپی و اجرا (Cheat Sheet)
 --------------------------------------------------------------------------------
-این دستورات را می‌توانید مستقیماً کپی کرده و تنها با تغییر مسیر فایل یا پوشه (--path) اجرا کنید:
+# ۱. استخراج (Export):
+QueryPort.exe --path test_sql --dry-run
+QueryPort.exe --path test_sql --format csv
+QueryPort.exe --path sql_queries --format both --output my_exports
 
-[۱] حالت‌های بررسی و پیش‌نمایش (بدون ایجاد فایل در دیسک):
---------------------------------------------------------------
-# پیش‌نمایش تعداد رکوردهای یک فایل خاص:
-python export_sql.py --path test_sql/01_CUSTOMERS_AND_ACCOUNTS.sql --dry-run
-
-# پیش‌نمایش تعداد رکوردهای تمامی فایل‌های یک پوشه:
-python export_sql.py --path test_sql --dry-run
-python export_sql.py --path sql_queries --dry-run
-
-# پیش‌نمایش تعداد رکوردها و درخواست تایید [y/N] قبل از استخراج:
-python export_sql.py --path test_sql --confirm
-
-
-[۲] استخراج خروجی یک فایل مشخص (Single File Export):
---------------------------------------------------------------
-# خروجی هم‌زمان CSV و INSERT:
-python export_sql.py --path test_sql/01_CUSTOMERS_AND_ACCOUNTS.sql --format both
-
-# خروجی فقط فایل CSV (با پشتیبانی از فونت فارسی در اکسل):
-python export_sql.py --path test_sql/01_CUSTOMERS_AND_ACCOUNTS.sql --format csv
-
-# خروجی فقط فایل اسکریپت INSERT:
-python export_sql.py --path test_sql/01_CUSTOMERS_AND_ACCOUNTS.sql --format insert
-
-
-[۳] استخراج کلی یک پوشه با تنظیمات دلخواه (Batch / Directory Export):
---------------------------------------------------------------
-# اجرای پیش‌فرض بر روی کل پوشه کانفیگ‌شده در config.json:
-python export_sql.py
-
-# اجرای کل فایل‌های یک پوشه و ذخیره در یک پوشه خروجی اختصاصی:
-python export_sql.py --path test_sql --output my_exports
-
-# خروجی گرفتن از فایل‌های یک پوشه در پوشه exports_custom:
-python export_sql.py --path sql_queries --output exports_custom --format both
-
-# تنظیم سرعت واکشی با افزایش سایز بافر (مثلاً ۵۰۰۰ رکورد در هر نوبت):
-python export_sql.py --path sql_queries --batch-size 5000
-
-# استفاده از یک فایل کانفیگ جداگانه (مثلاً برای دیتابیس تستی دیگر):
-python export_sql.py --config prod_config.json --path test_sql
+# ۲. ورود داده (Import):
+QueryPort.exe import --dry-run
+QueryPort.exe import --path imports --commit-mode batch --batch-size 5000
+QueryPort.exe import --path imports --existing-data truncate --on-error skip_and_log
 
 
 --------------------------------------------------------------------------------
-۷. سناریوهای کاربردی و خروجی نمونه (Usage Scenarios)
+۶. آزمون‌ها و تضمین کیفیت (Testing & QA)
 --------------------------------------------------------------------------------
-۱. اجرای ساده و خودکار (بر اساس کانفیگ):
-   python export_sql.py
-
-۲. بررسی و تخمین تعداد رکوردها قبل از اجرا (بدون ایجاد فایل):
-   python export_sql.py --path test_sql --dry-run
-
-   نمونه خروجی:
-   ========================================================================
-   [PREVIEW] Query Row Counts & Estimates
-   ========================================================================
-   File: 01_CUSTOMERS_AND_ACCOUNTS.sql
-     [01] TEST_CUSTOMERS            : 10 rows
-     [02] TEST_ACCOUNTS             : 10 rows
-     [03] TEST_CUSTOMERS            : 5 rows
-   ------------------------------------------------------------------------
-   File: 02_TRANSACTIONS_AND_BRANCHES.sql
-     [01] TEST_TRANSACTIONS         : 10 rows
-     [02] TEST_BRANCHES             : 10 rows
-   ------------------------------------------------------------------------
-   Total Queries: 5 | Total Estimated Rows: 45
-   ========================================================================
-
-۳. پیش‌نمایش همراه با تأیید برای استخراج (Interactive Confirm):
-   python export_sql.py --path test_sql --confirm
-
-۴. استخراج فقط یک فایل معین با فرمت CSV:
-   python export_sql.py --path test_sql/01_CUSTOMERS_AND_ACCOUNTS.sql --format csv
-
-۵. استخراج فقط دستورات INSERT در یک پوشه دلخواه:
-   python export_sql.py --path sql_queries --format insert --output my_inserts
-
-
---------------------------------------------------------------------------------
-۸. ساختار پوشه‌های خروجی (Output Structure)
---------------------------------------------------------------------------------
-به ازای هر فایل SQL، یک فولدر با همان نام (بدون پسوند .sql) ایجاد شده و
-کوئری‌ها بر اساس شماره ترتیب و نام جدول نام‌گذاری می‌شوند:
-
-exports/
-|-- 01_CUSTOMERS_AND_ACCOUNTS/
-|   |-- 01_TEST_CUSTOMERS.csv
-|   |-- 01_TEST_CUSTOMERS_insert.sql
-|   |-- 02_TEST_ACCOUNTS.csv
-|   |-- 02_TEST_ACCOUNTS_insert.sql
-|   |-- 03_TEST_CUSTOMERS.csv
-|   +-- 03_TEST_CUSTOMERS_insert.sql
-+-- 02_TRANSACTIONS_AND_BRANCHES/
-    |-- 01_TEST_TRANSACTIONS.csv
-    |-- 01_TEST_TRANSACTIONS_insert.sql
-    |-- 02_TEST_BRANCHES.csv
-    +-- 02_TEST_BRANCHES_insert.sql
-
-
---------------------------------------------------------------------------------
-۹. اجرای تست‌های خودکار (Automated Testing)
---------------------------------------------------------------------------------
-جهت اجرای مجموعه تست‌های جامع واحد (Unit Tests) و بررسی یکپارچگی ابزار:
+اجرای ۳۶ آزمون واحد (Unit Tests) بدون وابستگی به دیتابیس لایو:
   python -m unittest discover -v
-
-این دستور ۱۴ سناریوی مختلف شامل اعتبارسنجی کانفیگ، حذف کامنت‌ها، نام‌گذاری
-جداول دابل‌کوت، شکستن سمیکالن درون رشته‌ها، دقت میکروثانیه، ماک استریم دیتابیس
-و فلگ‌های پیش‌نمایش را بررسی می‌کند.
+  (یا pytest -v)
 ================================================================================
