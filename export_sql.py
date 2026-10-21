@@ -75,18 +75,27 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         dest="confirm",
         help="Show row counts for all queries and prompt for confirmation before exporting."
     )
+    parser.add_argument(
+        "--schema", "-s",
+        dest="schema",
+        help="Target database schema for queries (defaults to database.schema in config)."
+    )
     return parser.parse_args(args)
 
 
 def resolve_settings(cli_args: argparse.Namespace, config_data: dict) -> dict:
     """Merge CLI arguments with config defaults, giving precedence to CLI options."""
     defaults = config_data.get("defaults", {})
+    db_config = dict(config_data.get("database", {}))
+    schema = getattr(cli_args, "schema", None) or db_config.get("schema") or defaults.get("schema")
+    if schema:
+        db_config["schema"] = schema
     return {
-        "input_path": cli_args.input_path or defaults.get("input_path", "Basic_Information_Tables"),
+        "input_path": cli_args.input_path or defaults.get("input_path", "test_sql"),
         "output_dir": cli_args.output_dir or defaults.get("output_dir", "exports"),
         "format": cli_args.format or defaults.get("format", "both"),
         "batch_size": cli_args.batch_size or defaults.get("batch_size", 1000),
-        "database": config_data.get("database", {})
+        "database": db_config
     }
 
 
@@ -207,7 +216,11 @@ def create_connection(db_config: dict):
     service_name = db_config.get("service_name", "XE")
     dsn = db_config.get("dsn") or f"{host}:{port}/{service_name}"
 
-    return oracledb.connect(user=user, password=password, dsn=dsn)
+    conn = oracledb.connect(user=user, password=password, dsn=dsn)
+    schema = db_config.get("schema")
+    if schema:
+        conn.current_schema = schema
+    return conn
 
 
 def process_query(cursor, query_info: tuple[int, str, str], format_type: str, target_dir: Path, batch_size: int = 1000) -> int:
@@ -364,6 +377,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Output Dir  : {output_root}")
     print(f"Format      : {format_type}")
     print(f"Batch Size  : {batch_size}")
+    if settings["database"].get("schema"):
+        print(f"Schema      : {settings['database']['schema']}")
     print("--------------------------------------------------")
 
     try:

@@ -74,6 +74,7 @@
 - database.host: آدرس سرور پایگاه داده (مثلاً localhost یا IP سرور)
 - database.port: پورت شنود اوراکل (پیش‌فرض: 1521)
 - database.service_name: نام سرویس یا دیتابیس (مانند ORCL, XE, ORCLPDB1)
+- database.schema: اسکیمای هدف اجرای کوئری‌ها (CURRENT_SCHEMA) در صورت تفاوت با یوزر لاگین
 - defaults.input_path: مسیر پیش‌فرض اسکریپت یا پوشه فایل‌های SQL
 - defaults.output_dir: نام پوشه پیش‌فرض جهت ذخیره خروجی‌ها
 - defaults.format: فرمت خروجی: "both" (هر دو)، "csv" یا "insert"
@@ -117,6 +118,9 @@ Execute with default settings? [Y/n]:
 سوئیچ‌ها و فلگ‌ها:
   --path, -p <مسیر>
       آدرس یک فایل .sql مشخص یا یک پوشه حاوی چندین فایل SQL.
+  
+  --schema, -s <نام اسکیما>
+      تغییر اسکیمای جاری سشن دیتابیس (CURRENT_SCHEMA) در صورت تفاوت با یوزر اتصال.
   
   --format, -f <both|csv|insert>
       انتخاب نوع خروجی‌های مورد نظر (پیش‌فرض: both).

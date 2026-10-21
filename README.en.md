@@ -140,6 +140,7 @@ pip install -r requirements.txt
 | Option | Short | Arguments | Description |
 | :--- | :---: | :---: | :--- |
 | `--path` | `-p` | Path | Path to a single `.sql` file or directory of `.sql` files |
+| `--schema` | `-s` | Schema | Switch session CURRENT_SCHEMA to target schema |
 | `--format` | `-f` | `both`, `csv`, `insert` | Output format (default: `both`) |
 | `--dry-run` | `-d` | Flag | Preview row counts without writing any files |
 | `--confirm` | - | Flag | Preview row counts and prompt for confirmation before export |

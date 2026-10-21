@@ -4,8 +4,10 @@ echo   Building QueryPort Standalone Executable
 echo ===================================================
 
 pyinstaller --noconfirm --clean ^
-  --onedir=false --onefile ^
+  --onefile ^
   --name "QueryPort" ^
+  --collect-all oracledb ^
+  --collect-all cryptography ^
   --add-data "config.json;." ^
   export_sql.py
 

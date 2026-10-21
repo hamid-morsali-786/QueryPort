@@ -4,7 +4,8 @@
     "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
-    "service_name": "ORCLPDB1"
+    "service_name": "ORCLPDB1",
+    "schema": "TARGET_SCHEMA"
   },
   "defaults": {
     "input_path": "sql_queries",

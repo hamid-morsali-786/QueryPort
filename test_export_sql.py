@@ -31,6 +31,31 @@ class TestConfigAndArgs(unittest.TestCase):
         self.assertTrue(args.dry_run)
         self.assertTrue(args.confirm)
 
+    def test_schema_config_and_cli_override(self):
+        cfg = {
+            "database": {"user": "APP_USER", "password": "pwd", "schema": "CORE_SCHEMA"},
+            "defaults": {}
+        }
+        # 1. Config default
+        args = parse_args([])
+        settings = resolve_settings(args, cfg)
+        self.assertEqual(settings["database"]["schema"], "CORE_SCHEMA")
+
+        # 2. CLI override via --schema / -s
+        args_cli = parse_args(["--schema", "CUSTOM_SCHEMA"])
+        settings_cli = resolve_settings(args_cli, cfg)
+        self.assertEqual(settings_cli["database"]["schema"], "CUSTOM_SCHEMA")
+
+    def test_create_connection_sets_current_schema(self):
+        from unittest.mock import patch, MagicMock
+        from export_sql import create_connection
+
+        mock_conn = MagicMock()
+        with patch("oracledb.connect", return_value=mock_conn) as mock_connect:
+            db_cfg = {"user": "U", "password": "P", "dsn": "localhost/XE", "schema": "TARGET_SCHEMA"}
+            conn = create_connection(db_cfg)
+            self.assertEqual(conn.current_schema, "TARGET_SCHEMA")
+
 class TestSqlParser(unittest.TestCase):
     def test_extract_queries_with_comments_and_prompts(self):
         from export_sql import extract_queries

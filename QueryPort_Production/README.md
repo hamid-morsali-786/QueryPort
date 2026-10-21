@@ -219,7 +219,8 @@ Execute with default settings? [Y/n]:
     "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
-    "service_name": "ORCLPDB1"
+    "service_name": "ORCLPDB1",
+    "schema": "TARGET_SCHEMA"
   },
   "defaults": {
     "input_path": "sql_queries",
@@ -238,6 +239,7 @@ Execute with default settings? [Y/n]:
 | `database.host` | رشته | `localhost` | آدرس IP یا Hostname سرور اوراکل |
 | `database.port` | عدد | `1521` | پورت شنود لیسنر اوراکل |
 | `database.service_name` | رشته | `ORCL` | نام سرویس پایگاه داده (Service Name) |
+| `database.schema` | رشته | اختیاری (پیش‌فرض: همان user) | **اسکیمای هدف:** تغییر اسکیمای جاری سشن (`CURRENT_SCHEMA`) جهت اجرای کوئری‌ها روی اسکیمای مجزا |
 | `defaults.input_path` | رشته | `.` | پوشه یا فایل پیش‌فرض اسکریپت‌های SQL |
 | `defaults.output_dir` | رشته | `exports` | مسیر پوشه مقصد ذخیره‌سازی داده‌ها |
 | `defaults.format` | رشته | `both` | قالب خروجی (`both`، `csv` یا `insert`) |
@@ -250,6 +252,7 @@ Execute with default settings? [Y/n]:
 | پارامتر بلند | پارامتر کوتاه | مقادیر پذیرفته‌شده | توضیحات عملکردی |
 | :--- | :---: | :---: | :--- |
 | `--path` | `-p` | مسیر فایل یا فولدر | آدرس فایل مشخص `.sql` یا پوشه شامل چندین فایل SQL |
+| `--schema` | `-s` | نام اسکیما | تغییر اسکیمای جاری سشن اوراکل (`CURRENT_SCHEMA`) مستقل از یوزر لاگین |
 | `--format` | `-f` | `both`, `csv`, `insert` | قالب فایل‌های خروجی |
 | `--dry-run` | `-d` | پرچم بدون مقدار | **پیش‌نمایش تعداد رکوردها:** فقط شمارش سطرها در دیتابیس بدون ساخت فایل |
 | `--confirm` | - | پرچم بدون مقدار | **پیش‌نمایش با تایید کاربر:** نمایش تعداد رکوردها و سپس دریافت تایید برای ادامه |
