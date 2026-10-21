@@ -147,6 +147,107 @@ class TestImportConfigAndArgs(unittest.TestCase):
         self.assertIn("PRE-IMPORT VALIDATION REPORT", report)
         self.assertIn("MISSING_TABLE", report)
 
+    def test_import_single_file_batch_commit(self):
+        from unittest.mock import MagicMock
+        from import_sql import import_single_file
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8") as f:
+            f.write("ID,NAME\n1,Alice\n2,Bob\n")
+            csv_path = Path(f.name)
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        
+        table_meta = {"ID": {"data_type": "NUMBER"}, "NAME": {"data_type": "VARCHAR2"}}
+        settings = {
+            "commit_mode": "batch",
+            "batch_size": 1,
+            "existing_data_action": "append",
+            "on_error": "abort",
+            "bad_rows_dir": "errors"
+        }
+        res = import_single_file(mock_conn, csv_path, "TEST_TABLE", table_meta, settings)
+        self.assertEqual(res["imported"], 2)
+        self.assertEqual(mock_conn.commit.call_count, 2)
+        csv_path.unlink(missing_ok=True)
+
+    def test_import_single_file_commit_all(self):
+        from unittest.mock import MagicMock
+        from import_sql import import_single_file
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8") as f:
+            f.write("ID,NAME\n1,Alice\n2,Bob\n")
+            csv_path = Path(f.name)
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        
+        table_meta = {"ID": {"data_type": "NUMBER"}, "NAME": {"data_type": "VARCHAR2"}}
+        settings = {
+            "commit_mode": "all",
+            "batch_size": 1,
+            "existing_data_action": "append",
+            "on_error": "abort",
+            "bad_rows_dir": "errors"
+        }
+        res = import_single_file(mock_conn, csv_path, "TEST_TABLE", table_meta, settings)
+        self.assertEqual(res["imported"], 2)
+        self.assertEqual(mock_conn.commit.call_count, 1)
+        csv_path.unlink(missing_ok=True)
+
+    def test_import_single_file_existing_data_truncate(self):
+        from unittest.mock import MagicMock
+        from import_sql import import_single_file
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8") as f:
+            f.write("ID\n1\n")
+            csv_path = Path(f.name)
+        
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        
+        table_meta = {"ID": {"data_type": "NUMBER"}}
+        settings = {
+            "commit_mode": "all",
+            "batch_size": 100,
+            "existing_data_action": "truncate",
+            "on_error": "abort",
+            "bad_rows_dir": "errors"
+        }
+        import_single_file(mock_conn, csv_path, "TEST_TABLE", table_meta, settings)
+        mock_cursor.execute.assert_any_call("TRUNCATE TABLE TEST_TABLE")
+        csv_path.unlink(missing_ok=True)
+
+    def test_import_single_file_skip_and_log_fallback(self):
+        from unittest.mock import MagicMock
+        from import_sql import import_single_file
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / "data.csv"
+            csv_path.write_text("ID\n1\n2\n", encoding="utf-8")
+            
+            mock_conn = MagicMock()
+            mock_cursor = MagicMock()
+            mock_cursor.executemany.side_effect = Exception("Bulk insert failure")
+            mock_cursor.execute.side_effect = [None, Exception("ORA-00001: unique constraint")]
+            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+            
+            err_dir = Path(tmpdir) / "errors"
+            table_meta = {"ID": {"data_type": "NUMBER"}}
+            settings = {
+                "commit_mode": "batch",
+                "batch_size": 100,
+                "existing_data_action": "append",
+                "on_error": "skip_and_log",
+                "bad_rows_dir": str(err_dir)
+            }
+            res = import_single_file(mock_conn, csv_path, "TEST_TABLE", table_meta, settings)
+            self.assertEqual(res["imported"], 1)
+            self.assertEqual(res["failed"], 1)
+            bad_file = err_dir / "TEST_TABLE_rejected.csv"
+            self.assertTrue(bad_file.exists())
+            content = bad_file.read_text(encoding="utf-8")
+            self.assertIn("ORA-00001", content)
+
 
 if __name__ == "__main__":
     unittest.main()
