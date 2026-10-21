@@ -346,7 +346,20 @@ def process_sql_file(file_path: Path, conn, output_root: Path, format_type: str,
 
 def main(argv: list[str] | None = None) -> int:
     """Main CLI entry point."""
-    args = parse_args(argv)
+    args_list = list(sys.argv[1:] if argv is None else argv)
+    if args_list and args_list[0].lower() == "import":
+        import import_sql
+        return import_sql.main(args_list[1:])
+    if "--mode" in args_list:
+        idx = args_list.index("--mode")
+        if idx + 1 < len(args_list) and args_list[idx + 1].lower() == "import":
+            import import_sql
+            remaining = args_list[:idx] + args_list[idx + 2:]
+            return import_sql.main(remaining)
+        elif idx + 1 < len(args_list) and args_list[idx + 1].lower() == "export":
+            args_list = args_list[:idx] + args_list[idx + 2:]
+
+    args = parse_args(args_list)
     try:
         config_data = load_config(args.config_path)
     except Exception as exc:
@@ -429,16 +442,60 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def interactive_loop():
-    """Interactive console prompt when launched with no arguments."""
+    """Interactive unified console prompt when launched with no arguments."""
     print("==================================================")
-    print("      QueryPort - Interactive Console Mode        ")
+    print("           QueryPort Unified Console              ")
     print("==================================================")
-    print("Options:")
-    print("  [Y / Enter] : Run export with default config.json settings")
-    print("  [N]         : Enter custom command mode")
-    print("  [exit / q]  : Exit program\n")
+    print("Select Operation:")
+    print("  [1 / E] : Export Database queries to CSV / SQL Insert (config.json)")
+    print("  [2 / I] : Import CSV datasets into Database tables  (import_config.json)")
+    print("  [exit / q] : Exit program\n")
     try:
-        choice = input("Execute with default settings? [Y/n]: ").strip().lower()
+        op = input("Enter choice [1/2] (Default: 1): ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        return
+
+    if op in ("exit", "quit", "q"):
+        return
+
+    if op in ("2", "i", "import"):
+        import import_sql
+        try:
+            choice = input("\nExecute import with default import_config.json settings? [Y/n]: ").strip().lower()
+        except (KeyboardInterrupt, EOFError):
+            return
+        if choice in ("", "y", "yes"):
+            try:
+                import_sql.main([])
+            except SystemExit:
+                pass
+            try:
+                input("\nExecution finished. Press Enter to exit...")
+            except (KeyboardInterrupt, EOFError):
+                pass
+            return
+        
+        print("\nEnter import command or arguments (e.g. --path imports --dry-run).")
+        print("Type 'exit' or 'q' to quit:\n")
+        while True:
+            try:
+                cmd = input("QueryPort (import)> ").strip()
+            except (KeyboardInterrupt, EOFError):
+                break
+            if not cmd or cmd.lower() in ("exit", "quit", "q"):
+                break
+            parts = shlex.split(cmd)
+            if parts and parts[0].lower().endswith((".exe", "export_sql.py", "import_sql.py")):
+                parts = parts[1:]
+            try:
+                import_sql.main(parts)
+            except SystemExit:
+                pass
+        return
+
+    # Export flow (default: 1)
+    try:
+        choice = input("\nExecute export with default config.json settings? [Y/n]: ").strip().lower()
     except (KeyboardInterrupt, EOFError):
         return
 
@@ -457,14 +514,13 @@ def interactive_loop():
     print("Type 'exit' or 'q' to quit:\n")
     while True:
         try:
-            cmd = input("QueryPort> ").strip()
+            cmd = input("QueryPort (export)> ").strip()
         except (KeyboardInterrupt, EOFError):
             break
         if not cmd or cmd.lower() in ("exit", "quit", "q"):
             break
 
         parts = shlex.split(cmd)
-        # Strip leading executable/script name if user typed .\QueryPort.exe ...
         if parts and parts[0].lower().endswith((".exe", "export_sql.py")):
             parts = parts[1:]
 

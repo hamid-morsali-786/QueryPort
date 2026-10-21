@@ -223,19 +223,45 @@ class TestOrchestrator(unittest.TestCase):
         from unittest.mock import patch
         from export_sql import interactive_loop
         
-        # Test choice 'n' followed by 'q'
-        with patch("builtins.input", side_effect=["n", "q"]):
-            # Should enter custom command mode and exit cleanly
+        # Test choice '1' (export), 'n' (custom mode), 'q' (quit)
+        with patch("builtins.input", side_effect=["1", "n", "q"]):
             interactive_loop()
 
     def test_interactive_loop_default_yes(self):
         from unittest.mock import patch
         from export_sql import interactive_loop
         
-        with patch("builtins.input", side_effect=["y", ""]):
+        # Test choice '1' (export), 'y' (confirm), '' (enter to exit)
+        with patch("builtins.input", side_effect=["1", "y", ""]):
             with patch("export_sql.main") as mock_main:
                 interactive_loop()
                 mock_main.assert_called_once_with([])
+
+    def test_interactive_loop_import_choice(self):
+        from unittest.mock import patch
+        from export_sql import interactive_loop
+        
+        # Test choice '2' (import), 'y' (confirm), '' (enter to exit)
+        with patch("builtins.input", side_effect=["2", "y", ""]):
+            with patch("import_sql.main") as mock_import_main:
+                interactive_loop()
+                mock_import_main.assert_called_once_with([])
+
+    def test_mode_routing_import_subcommand(self):
+        from unittest.mock import patch
+        import export_sql
+        with patch("import_sql.main", return_value=0) as mock_import_main:
+            code = export_sql.main(["import", "--dry-run"])
+            self.assertEqual(code, 0)
+            mock_import_main.assert_called_once_with(["--dry-run"])
+
+    def test_mode_routing_flag_mode(self):
+        from unittest.mock import patch
+        import export_sql
+        with patch("import_sql.main", return_value=0) as mock_import_main:
+            code = export_sql.main(["--mode", "import", "--dry-run"])
+            self.assertEqual(code, 0)
+            mock_import_main.assert_called_once_with(["--dry-run"])
 
 
 if __name__ == "__main__":
