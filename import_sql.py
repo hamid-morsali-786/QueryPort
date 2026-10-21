@@ -114,27 +114,31 @@ def extract_table_name(file_name: str) -> str:
 
 def clean_cell_value(val: str, col_type: str | None = None) -> Any:
     """Clean and cast a single CSV cell value according to Oracle expectations."""
-    if val is None:
-        return None
-    s = val.strip()
-    if not s:
+    if val is None or not val.strip():
         return None
 
-    if col_type and ("DATE" in col_type.upper() or "TIMESTAMP" in col_type.upper()):
-        for fmt in (
-            "%Y-%m-%d %H:%M:%S",
-            "%Y-%m-%d %H:%M:%S.%f",
-            "%Y/%m/%d %H:%M:%S",
-            "%Y/%m/%d",
-            "%Y-%m-%d",
-            "%Y-%m-%dT%H:%M:%S",
-            "%Y-%m-%dT%H:%M:%S.%f",
-        ):
-            try:
-                return datetime.datetime.strptime(s, fmt)
-            except ValueError:
-                continue
-    return s
+    if col_type:
+        upper_type = col_type.upper()
+        if "DATE" in upper_type or "TIMESTAMP" in upper_type:
+            s = val.strip()
+            for fmt in (
+                "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d %H:%M:%S.%f",
+                "%Y/%m/%d %H:%M:%S",
+                "%Y/%m/%d",
+                "%Y-%m-%d",
+                "%Y-%m-%dT%H:%M:%S",
+                "%Y-%m-%dT%H:%M:%S.%f",
+            ):
+                try:
+                    return datetime.datetime.strptime(s, fmt)
+                except ValueError:
+                    continue
+            return s
+        if "NUMBER" in upper_type or "FLOAT" in upper_type:
+            return val.strip()
+
+    return val
 
 
 def stream_csv_batches(file_path: Path, batch_size: int = 5000) -> Generator[tuple[list[str], list[list[Any]]], None, None]:
@@ -151,6 +155,8 @@ def stream_csv_batches(file_path: Path, batch_size: int = 5000) -> Generator[tup
         headers = [h.strip().upper() for h in raw_headers]
         batch = []
         for row in reader:
+            if not row or all(cell.strip() == "" for cell in row):
+                continue
             batch.append(row)
             if len(batch) >= batch_size:
                 yield headers, batch

@@ -49,7 +49,7 @@ class TestImportConfigAndArgs(unittest.TestCase):
     def test_stream_csv_batches(self):
         from import_sql import stream_csv_batches
         with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8-sig") as f:
-            f.write("ID,NAME\n1,A\n2,B\n3,C\n4,D\n5,E\n")
+            f.write("ID,NAME\n1,A\n2,B\n\n,,,\n3,C\n4,D\n5,E\n")
             csv_path = Path(f.name)
         
         batches = list(stream_csv_batches(csv_path, batch_size=2))
