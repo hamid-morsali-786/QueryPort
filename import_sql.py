@@ -13,20 +13,11 @@ import sys
 import time
 from pathlib import Path
 from typing import Any, Generator
+from export_sql import load_config, create_connection
 
-
-def load_import_config(config_path: str = "import_config.json") -> dict:
-    """Load database credentials and import settings from JSON config file."""
-    cfg_file = Path(config_path)
-    if not cfg_file.exists():
-        exe_dir = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).parent
-        fallback = exe_dir / config_path
-        if fallback.exists():
-            cfg_file = fallback
-        else:
-            raise FileNotFoundError(f"Import configuration file not found: {config_path}")
-    with open(cfg_file, "r", encoding="utf-8") as f:
-        return json.load(f)
+# Backward-compatibility aliases
+load_import_config = load_config
+create_import_connection = create_connection
 
 
 def parse_import_args(args: list[str] | None = None) -> argparse.Namespace:
@@ -289,23 +280,6 @@ def format_validation_report(errors: list[dict]) -> str:
     lines.append("================================================================================")
     lines.append("[ABORT] Import cancelled. Please align CSV files with database schema.")
     return "\n".join(lines)
-
-
-def create_import_connection(db_config: dict):
-    """Establish connection to Oracle Database using oracledb Thin mode."""
-    import oracledb
-    oracledb.defaults.fetch_lobs = False
-    user = db_config.get("user")
-    password = db_config.get("password")
-    host = db_config.get("host", "localhost")
-    port = db_config.get("port", 1521)
-    service_name = db_config.get("service_name", "XE")
-    dsn = db_config.get("dsn") or f"{host}:{port}/{service_name}"
-    conn = oracledb.connect(user=user, password=password, dsn=dsn)
-    schema = db_config.get("schema")
-    if schema:
-        conn.current_schema = schema
-    return conn
 
 
 def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict, settings: dict) -> dict:
