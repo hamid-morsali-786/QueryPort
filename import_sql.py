@@ -111,21 +111,11 @@ def clean_cell_value(val: str, col_type: str | None = None) -> Any:
     if col_type:
         upper_type = col_type.upper()
         if "DATE" in upper_type or "TIMESTAMP" in upper_type:
-            s = val.strip()
-            for fmt in (
-                "%Y-%m-%d %H:%M:%S",
-                "%Y-%m-%d %H:%M:%S.%f",
-                "%Y/%m/%d %H:%M:%S",
-                "%Y/%m/%d",
-                "%Y-%m-%d",
-                "%Y-%m-%dT%H:%M:%S",
-                "%Y-%m-%dT%H:%M:%S.%f",
-            ):
-                try:
-                    return datetime.datetime.strptime(s, fmt)
-                except ValueError:
-                    continue
-            return s
+            s = val.strip().replace("/", "-")
+            try:
+                return datetime.datetime.fromisoformat(s)
+            except ValueError:
+                return val.strip()
         if "NUMBER" in upper_type or "FLOAT" in upper_type:
             return val.strip()
 

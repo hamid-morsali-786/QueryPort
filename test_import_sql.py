@@ -58,6 +58,18 @@ class TestImportConfigAndArgs(unittest.TestCase):
         dt = clean_cell_value("1995-01-01 00:00:00", col_type="DATE")
         self.assertEqual(dt, datetime.datetime(1995, 1, 1, 0, 0, 0))
 
+    def test_clean_cell_value_iso_and_slashed_dates(self):
+        from import_sql import clean_cell_value
+        import datetime
+        dt1 = clean_cell_value("2026-10-24 12:30:00", col_type="DATE")
+        self.assertEqual(dt1, datetime.datetime(2026, 10, 24, 12, 30, 0))
+        dt2 = clean_cell_value("2026/10/24 12:30:00", col_type="DATE")
+        self.assertEqual(dt2, datetime.datetime(2026, 10, 24, 12, 30, 0))
+        dt3 = clean_cell_value("2026/10/24", col_type="DATE")
+        self.assertEqual(dt3, datetime.datetime(2026, 10, 24, 0, 0, 0))
+        dt4 = clean_cell_value("2026-10-24 12:30:00.123456", col_type="TIMESTAMP")
+        self.assertEqual(dt4, datetime.datetime(2026, 10, 24, 12, 30, 0, 123456))
+
     def test_stream_csv_batches(self):
         from import_sql import stream_csv_batches
         with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8-sig") as f:
