@@ -283,8 +283,8 @@ Enter choice [1/2] (Default: 1):
 ```json
 {
   "database": {
-    "user": "TARGET_SCHEMA",
-    "password": "your_password",
+    "user": "YOUR_DB_USER",
+    "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
     "service_name": "ORCLPDB1",
@@ -303,8 +303,8 @@ Enter choice [1/2] (Default: 1):
 ```json
 {
   "database": {
-    "user": "TARGET_SCHEMA",
-    "password": "your_password",
+    "user": "YOUR_DB_USER",
+    "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
     "service_name": "ORCLPDB1",
@@ -419,7 +419,7 @@ QueryPort.exe import --schema CRM_SCHEMA --config my_import_config.json
 1. **حذف دستورات محیطی SQL\*Plus:** فیلتر خودکار دستورات `PROMPT`, `SET`, `SPOOL`, `CLEAR`, `SHOW` و ...
 2. **پاکسازی کامنت‌ها:** حذف کامنت‌های تک‌خطی (`--`) و کامنت‌های چندخطی (`/* ... */`) حتی اگر داخل بلاک‌های پیچیده باشند.
 3. **تفکیک عبارات با سمیکالن (`;`):** شکستن دستورات به صورت چند کوئری مستقل و اجرای ترتیبی هر یک با مکانیسم مدیریت خطا.
-4. **استخراج هوشمند نام جدول:** شناسایی نام جدول حتی در صورت وجود پیشوند اسکیما مانند `TARGET_SCHEMA.CUSTOMER_ACCOUNTS` و نام‌گذاری خروجی با نام تمیز جدول (`CUSTOMER_ACCOUNTS`).
+4. **استخراج هوشمند نام جدول:** شناسایی نام جدول حتی در صورت وجود پیشوند اسکیما مانند `MY_SCHEMA.CUSTOMER_ACCOUNTS` و نام‌گذاری خروجی با نام تمیز جدول (`CUSTOMER_ACCOUNTS`).
 
 ---
 

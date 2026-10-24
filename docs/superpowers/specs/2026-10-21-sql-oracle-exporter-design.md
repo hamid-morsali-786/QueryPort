@@ -70,8 +70,8 @@ Located by default in the working directory:
 ```json
 {
   "database": {
-    "user": "TARGET_SCHEMA",
-    "password": "your_password",
+    "user": "YOUR_DB_USER",
+    "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
     "service_name": "ORCLPDB1"
@@ -109,7 +109,7 @@ Located by default in the working directory:
 
 ### 4.2 Table Name Resolution
 - A regex matches the first occurrence of `FROM\s+([a-zA-Z0-9_$.]+)` after the `SELECT` clause (ignoring subqueries if possible, or extracting the first candidate table).
-- Any schema prefix is stripped (e.g. `TARGET_SCHEMA.BANKPARAMETERS` -> `BANKPARAMETERS`).
+- Any schema prefix is stripped (e.g. `MY_SCHEMA.BANKPARAMETERS` -> `BANKPARAMETERS`).
 - If no valid table name can be derived (e.g., complex multi-table join or expressions), fallback to `QUERY`.
 - The final query identifier is formatted as `{:02d}_{table_name}` (e.g., `01_BANKPARAMETERS`).
 

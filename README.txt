@@ -43,8 +43,8 @@ CSV (سازگار با فارسی در اکسل) و اسکریپت‌های SQL 
 الف) فایل تنظیمات استخراج (config.json):
 {
   "database": {
-    "user": "TARGET_SCHEMA",
-    "password": "your_password",
+    "user": "YOUR_DB_USER",
+    "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
     "service_name": "ORCLPDB1",
@@ -61,8 +61,8 @@ CSV (سازگار با فارسی در اکسل) و اسکریپت‌های SQL 
 ب) فایل تنظیمات ورود داده (import_config.json):
 {
   "database": {
-    "user": "TARGET_SCHEMA",
-    "password": "your_password",
+    "user": "YOUR_DB_USER",
+    "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
     "service_name": "ORCLPDB1",

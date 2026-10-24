@@ -198,8 +198,8 @@ Enter choice [1/2] (Default: 1):
 ```json
 {
   "database": {
-    "user": "TARGET_SCHEMA",
-    "password": "your_password",
+    "user": "YOUR_DB_USER",
+    "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
     "service_name": "ORCLPDB1",
@@ -218,8 +218,8 @@ Enter choice [1/2] (Default: 1):
 ```json
 {
   "database": {
-    "user": "TARGET_SCHEMA",
-    "password": "your_password",
+    "user": "YOUR_DB_USER",
+    "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,
     "service_name": "ORCLPDB1",

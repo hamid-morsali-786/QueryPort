@@ -65,7 +65,7 @@ class TestSqlParser(unittest.TestCase):
         SET SQLFORMAT INSERT;
         /* multi-line
            comment block */
-        SELECT * FROM TARGET_SCHEMA.BANKPARAMETERS ORDER BY BANK;
+        SELECT * FROM MY_SCHEMA.BANKPARAMETERS ORDER BY BANK;
         
         PROMPT Next table
         SELECT ID, NAME FROM BRANCHPARAMETERS WHERE ACTIVE = 1;
@@ -75,7 +75,7 @@ class TestSqlParser(unittest.TestCase):
         idx1, table1, sql1 = queries[0]
         self.assertEqual(idx1, 1)
         self.assertEqual(table1, "BANKPARAMETERS")
-        self.assertIn("SELECT * FROM TARGET_SCHEMA.BANKPARAMETERS", sql1)
+        self.assertIn("SELECT * FROM MY_SCHEMA.BANKPARAMETERS", sql1)
         
         idx2, table2, sql2 = queries[1]
         self.assertEqual(idx2, 2)
@@ -109,7 +109,7 @@ class TestSqlParser(unittest.TestCase):
 
     def test_quoted_table_name_extraction(self):
         from export_sql import extract_queries
-        sql = 'SELECT * FROM "TARGET_SCHEMA"."BANKPARAMETERS";'
+        sql = 'SELECT * FROM "MY_SCHEMA"."BANKPARAMETERS";'
         queries = extract_queries(sql)
         self.assertEqual(queries[0][1], "BANKPARAMETERS")
 

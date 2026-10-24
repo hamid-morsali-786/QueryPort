@@ -1,6 +1,6 @@
 {
   "database": {
-    "user": "TARGET_SCHEMA",
+    "user": "YOUR_DB_USER",
     "password": "YOUR_DB_PASSWORD",
     "host": "localhost",
     "port": 1521,

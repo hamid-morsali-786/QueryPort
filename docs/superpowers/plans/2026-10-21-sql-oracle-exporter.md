@@ -21,7 +21,7 @@
 ## Review Focus
 1. SQL files with `PROMPT`, `SET`, `SPOOL`, or multiline comments before or inside queries must not cause syntax errors.
 2. Values containing single quotes (`'`) or ampersands (`&`) must be properly escaped (`''`) and preceded by `SET DEFINE OFF;`.
-3. Queries with schema prefixes (e.g. `TARGET_SCHEMA.BANKPARAMETERS`) must extract the clean table name (`BANKPARAMETERS`).
+3. Queries with schema prefixes (e.g. `MY_SCHEMA.BANKPARAMETERS`) must extract the clean table name (`BANKPARAMETERS`).
 4. `DATE` and `TIMESTAMP` column values from `oracledb` must convert to valid Oracle expressions without time truncation.
 5. Large queries must stream via `fetchmany` rather than fetching all rows at once into memory.
 
@@ -114,7 +114,7 @@ class TestSqlParser(unittest.TestCase):
         SET SQLFORMAT INSERT;
         /* multi-line
            comment block */
-        SELECT * FROM TARGET_SCHEMA.BANKPARAMETERS ORDER BY BANK;
+        SELECT * FROM MY_SCHEMA.BANKPARAMETERS ORDER BY BANK;
         
         PROMPT Next table
         SELECT ID, NAME FROM BRANCHPARAMETERS WHERE ACTIVE = 1;
@@ -124,7 +124,7 @@ class TestSqlParser(unittest.TestCase):
         idx1, table1, sql1 = queries[0]
         self.assertEqual(idx1, 1)
         self.assertEqual(table1, "BANKPARAMETERS")
-        self.assertIn("SELECT * FROM TARGET_SCHEMA.BANKPARAMETERS", sql1)
+        self.assertIn("SELECT * FROM MY_SCHEMA.BANKPARAMETERS", sql1)
         
         idx2, table2, sql2 = queries[1]
         self.assertEqual(idx2, 2)
