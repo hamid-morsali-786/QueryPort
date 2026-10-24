@@ -236,43 +236,40 @@ def process_query(cursor, query_info: tuple[int, str, str], format_type: str, ta
 
     target_dir.mkdir(parents=True, exist_ok=True)
     count = 0
+    col_str = ", ".join(columns)
 
-    if format_type == "both":
-        col_str = ", ".join(columns)
-        with open(csv_path, "w", encoding="utf-8-sig", newline="") as f_csv, \
-             open(sql_path, "w", encoding="utf-8") as f_sql:
-            writer = csv.writer(f_csv, quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(columns)
+    write_csv = format_type in ("both", "csv")
+    write_sql = format_type in ("both", "insert")
+
+    f_csv = open(csv_path, "w", encoding="utf-8-sig", newline="") if write_csv else None
+    f_sql = open(sql_path, "w", encoding="utf-8") if write_sql else None
+
+    try:
+        csv_writer = csv.writer(f_csv, quoting=csv.QUOTE_MINIMAL) if f_csv else None
+        if csv_writer:
+            csv_writer.writerow(columns)
+        if f_sql:
             f_sql.write(f"-- Exported data for table: {table_name}\nSET DEFINE OFF;\n\n")
 
-            while True:
-                rows = cursor.fetchmany(batch_size)
-                if not rows:
-                    break
-                for row in rows:
-                    writer.writerow(row)
+        while True:
+            rows = cursor.fetchmany(batch_size)
+            if not rows:
+                break
+            for row in rows:
+                if csv_writer:
+                    csv_writer.writerow(row)
+                if f_sql:
                     val_str = ", ".join(format_oracle_literal(v) for v in row)
                     f_sql.write(f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str});\n")
-                    count += 1
+                count += 1
+
+        if f_sql:
             f_sql.write("\nCOMMIT;\n")
-
-    elif format_type == "csv":
-        def row_stream():
-            while True:
-                rows = cursor.fetchmany(batch_size)
-                if not rows:
-                    break
-                yield from rows
-        count = export_to_csv(row_stream(), columns, csv_path)
-
-    elif format_type == "insert":
-        def row_stream():
-            while True:
-                rows = cursor.fetchmany(batch_size)
-                if not rows:
-                    break
-                yield from rows
-        count = export_to_insert(row_stream(), columns, table_name, sql_path)
+    finally:
+        if f_csv:
+            f_csv.close()
+        if f_sql:
+            f_sql.close()
 
     return count
 
