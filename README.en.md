@@ -107,8 +107,7 @@ flowchart TD
     subgraph Inputs and Configurations
         SQLIn["SQL Scripts (.sql)"]
         CSVIn["CSV Datasets (.csv)"]
-        ConfigExp["Export Config<br/>config.json"]
-        ConfigImp["Import Config<br/>import_config.json"]
+        Config["Unified Config<br/>config.json"]
     end
 
     subgraph QueryPort Dual Engine
@@ -133,8 +132,7 @@ flowchart TD
         Oracle[("Oracle Database Server<br/>Thin Mode Driver (Zero Client)")]
     end
 
-    ConfigExp --> CLI
-    ConfigImp --> CLI
+    Config --> CLI
     SQLIn --> Parser
     CSVIn --> Validator
 
@@ -158,7 +156,7 @@ flowchart TD
 ## 📦 Installation & Quick Start
 
 ### 1. Standalone Binary (Recommended for Production)
-Download the latest portable release from **[Releases](https://github.com/hamid-morsali-786/QueryPort/releases)**, configure `config.json` and/or `import_config.json`, and run `QueryPort.exe`.
+Download the latest portable release from **[Releases](https://github.com/hamid-morsali-786/QueryPort/releases)**, configure `config.json`, and run `QueryPort.exe`.
 
 ### 2. From Source (Development)
 ```bash
@@ -184,7 +182,7 @@ When launching `QueryPort.exe` without arguments (e.g. double-clicking):
 ==================================================
 Select Operation:
   [1 / E] : Export Database queries to CSV / SQL Insert (config.json)
-  [2 / I] : Import CSV datasets into Database tables  (import_config.json)
+  [2 / I] : Import CSV datasets into Database tables  (config.json)
   [exit / q] : Exit program
 
 Enter choice [1/2] (Default: 1): 
@@ -192,9 +190,10 @@ Enter choice [1/2] (Default: 1):
 
 ---
 
-## ⚙️ Configuration Guides
+## ⚙️ Configuration Guide (`config.json`)
 
-### 1. Export Configuration (`config.json`)
+All database connection parameters, export options, and bulk import settings are unified into a single `config.json`:
+
 ```json
 {
   "database": {
@@ -205,27 +204,13 @@ Enter choice [1/2] (Default: 1):
     "service_name": "ORCLPDB1",
     "schema": "TARGET_SCHEMA"
   },
-  "defaults": {
+  "export": {
     "input_path": "sql_queries",
     "output_dir": "exports",
     "format": "both",
     "batch_size": 1000
-  }
-}
-```
-
-### 2. Import Configuration (`import_config.json`)
-```json
-{
-  "database": {
-    "user": "YOUR_DB_USER",
-    "password": "YOUR_DB_PASSWORD",
-    "host": "localhost",
-    "port": 1521,
-    "service_name": "ORCLPDB1",
-    "schema": "TARGET_SCHEMA"
   },
-  "import_settings": {
+  "import": {
     "input_path": "imports",
     "commit_mode": "batch",
     "batch_size": 5000,
@@ -235,6 +220,9 @@ Enter choice [1/2] (Default: 1):
   }
 }
 ```
+
+> [!NOTE]
+> Backward compatibility is fully preserved: legacy section keys (`"defaults"`, `"import_settings"`) and separate files continue to work without changes.
 
 ---
 
@@ -260,7 +248,7 @@ Usage: `QueryPort.exe import [options]` or `QueryPort.exe --mode import [options
 | Option | Short | Type | Default | Description |
 | :--- | :---: | :---: | :---: | :--- |
 | `--path` | `-p` | Path | `imports` | Path to CSV file or directory of CSV files |
-| `--config` | `-c` | Path | `import_config.json` | Path to import config file |
+| `--config` | `-c` | Path | `config.json` | Path to config file (unified or legacy) |
 | `--schema` | `-s` | String | from config | Target Oracle database schema |
 | `--commit-mode` | - | String | `batch` | Commit strategy: `batch`, `row`, `all` |
 | `--batch-size` | `-b` | Int | `5000` | Batch size for ingestion and commits |
@@ -300,16 +288,14 @@ QueryPort.exe import --commit-mode row --on-error skip_and_log
 
 ## 🧪 Testing & Quality Assurance
 
-QueryPort includes a comprehensive mock-based test suite of 36 unit tests validating all components without needing a live Oracle database:
+QueryPort includes a comprehensive mock-based test suite of 39 unit tests validating all components without needing external test runners or a live Oracle database:
 
 ```bash
-pytest -v
-# or
 python -m unittest discover -v
 ```
 
 * `test_export_sql.py` (21 tests): SQL parsing, comments, escaping, UTF-8-SIG BOM, streaming, and CLI routing.
-* `test_import_sql.py` (15 tests): File discovery, cell cleaning, date parsing, data dictionary validation, commit modes, and bad-row logging.
+* `test_import_sql.py` (18 tests): File discovery, cell cleaning, native date parsing (`fromisoformat`), data dictionary validation, commit modes, and bad-row logging.
 
 ---
 

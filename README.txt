@@ -38,9 +38,9 @@ CSV (سازگار با فارسی در اکسل) و اسکریپت‌های SQL 
 
 
 --------------------------------------------------------------------------------
-۲. فایل‌های تنظیمات (Configuration Files)
+۲. فایل تنظیمات یکپارچه (config.json)
 --------------------------------------------------------------------------------
-الف) فایل تنظیمات استخراج (config.json):
+تمامی تنظیمات اتصال به دیتابیس، استخراج و ورود داده در فایل config.json قرار دارند:
 {
   "database": {
     "user": "YOUR_DB_USER",
@@ -50,25 +50,13 @@ CSV (سازگار با فارسی در اکسل) و اسکریپت‌های SQL 
     "service_name": "ORCLPDB1",
     "schema": "TARGET_SCHEMA"
   },
-  "defaults": {
-    "input_path": "test_sql",
+  "export": {
+    "input_path": "sql_queries",
     "output_dir": "exports",
     "format": "both",
     "batch_size": 1000
-  }
-}
-
-ب) فایل تنظیمات ورود داده (import_config.json):
-{
-  "database": {
-    "user": "YOUR_DB_USER",
-    "password": "YOUR_DB_PASSWORD",
-    "host": "localhost",
-    "port": 1521,
-    "service_name": "ORCLPDB1",
-    "schema": "TARGET_SCHEMA"
   },
-  "import_settings": {
+  "import": {
     "input_path": "imports",
     "commit_mode": "batch",
     "batch_size": 5000,
@@ -77,6 +65,8 @@ CSV (سازگار با فارسی در اکسل) و اسکریپت‌های SQL 
     "bad_rows_dir": "import_errors"
   }
 }
+
+(نکته: جهت سازگاری، کلیدهای قدیمی defaults و import_settings یا فایل‌های مجزا نیز پشتیبانی می‌شوند)
 
 
 --------------------------------------------------------------------------------
@@ -89,13 +79,13 @@ CSV (سازگار با فارسی در اکسل) و اسکریپت‌های SQL 
 ==================================================
 Select Operation:
   [1 / E] : Export Database queries to CSV / SQL Insert (config.json)
-  [2 / I] : Import CSV datasets into Database tables  (import_config.json)
+  [2 / I] : Import CSV datasets into Database tables  (config.json)
   [exit / q] : Exit program
 
 Enter choice [1/2] (Default: 1): 
 
 * با انتخاب 1 یا فشردن Enter: عملیات استخراج بر اساس config.json اجرا می‌شود.
-* با انتخاب 2: عملیات ورود داده بر اساس import_config.json آغاز می‌شود.
+* با انتخاب 2: عملیات ورود داده بر اساس config.json آغاز می‌شود.
 
 
 --------------------------------------------------------------------------------
@@ -122,7 +112,7 @@ Enter choice [1/2] (Default: 1):
   --on-error <abort|skip_and_log> استراتژی خطا (پیش‌فرض: abort)
   --bad-rows-dir <مسیر>       پوشه لاگ رکوردهای رد شده (پیش‌فرض: import_errors)
   --dry-run, -d               اعتبارسنجی متادیتا و بررسی ساختار بدون درج داده
-  --config, -c <مسیر JSON>    مسیر کانفیگ ایمپورت (پیش‌فرض: import_config.json)
+  --config, -c <مسیر JSON>    مسیر کانفیگ (پیش‌فرض: config.json)
 
 
 --------------------------------------------------------------------------------
@@ -142,7 +132,6 @@ QueryPort.exe import --path imports --existing-data truncate --on-error skip_and
 --------------------------------------------------------------------------------
 ۶. آزمون‌ها و تضمین کیفیت (Testing & QA)
 --------------------------------------------------------------------------------
-اجرای ۳۶ آزمون واحد (Unit Tests) بدون وابستگی به دیتابیس لایو:
+اجرای ۳۹ آزمون واحد (Unit Tests) بدون وابستگی با ماژول استاندارد پایتون:
   python -m unittest discover -v
-  (یا pytest -v)
 ================================================================================

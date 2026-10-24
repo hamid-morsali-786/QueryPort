@@ -22,6 +22,7 @@ build/
 dist/
 *.spec
 *.manifest
+QueryPort_Production/
 
 # Binaries / Executables (uncomment !QueryPort_Production/QueryPort.exe if tracking release)
 *.exe

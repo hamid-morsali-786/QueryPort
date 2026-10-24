@@ -36,7 +36,7 @@
 - [فایل اجرایی مستقل و کنسول تعاملی یکپارچه (Unified Interactive Console)](#فایل-اجرایی-مستقل-و-کنسول-تعاملی-یکپارچه-unified-interactive-console)
 - [موتور استخراج داده‌ها (Export Engine)](#موتور-استخراج-دادهها-export-engine)
 - [موتور هوشمند بارگذاری و ورود داده‌ها (CSV Importer Subsystem)](#موتور-هوشمند-بارگذاری-و-ورود-دادهها-csv-importer-subsystem)
-- [راهنمای جامع فایل‌های تنظیمات (config.json و import_config.json)](#راهنمای-جامع-فایلهای-تنظیمات-configjson-و-import_configjson)
+- [راهنمای جامع تنظیمات (config.json)](#راهنمای-جامع-تنظیمات-configjson)
 - [جدول جامع تمام پارامترهای خط فرمان (CLI Reference)](#جدول-جامع-تمام-پارامترهای-خط-فرمان-cli-reference)
 - [دستورات آماده کپی و اجرا (Ready-to-Run Cheat Sheet)](#دستورات-آماده-کپی-و-اجرا-ready-to-run-cheat-sheet)
 - [موتور هوشمند تفکیک و پردازش کوئری‌ها (Smart SQL Parser)](#موتور-هوشمند-تفکیک-و-پردازش-کوئریها-smart-sql-parser)
@@ -117,8 +117,7 @@ flowchart TD
     subgraph منابع و تنظیمات ورودی
         SQLIn["اسکریپت‌های ورودی (.sql)"]
         CSVIn["فایل‌های CSV دیتاست (.csv)"]
-        ConfigExp["تنظیمات استخراج<br/>config.json"]
-        ConfigImp["تنظیمات ورود<br/>import_config.json"]
+        Config["تنظیمات یکپارچه<br/>config.json"]
     end
 
     subgraph هسته پردازش دوگانه QueryPort
@@ -143,8 +142,7 @@ flowchart TD
         Oracle[("Oracle Database 19c / 21c / 23ai<br/>Thin Mode Protocol (Zero Client)")]
     end
 
-    ConfigExp --> CLI
-    ConfigImp --> CLI
+    Config --> CLI
     SQLIn --> Parser
     CSVIn --> Validator
 
@@ -168,9 +166,7 @@ flowchart TD
 ## 📦 نصب و راه‌اندازی (Installation)
 
 ### ۱. استفاده از فایل اجرایی آماده (پیشنهادی برای پروداکشن)
-بدون نیاز به پایتون یا درایور اوراکل، پوشه `QueryPort_Production` یا باینری `QueryPort.exe` را دریافت نموده و در کنار فایل‌های پیکربندی قرار دهید:
-* `config.json` برای عملیات استخراج (Export).
-* `import_config.json` برای عملیات بارگذاری (Import).
+بدون نیاز به پایتون یا درایور اوراکل، باینری مستقل `QueryPort.exe` را در کنار فایل پیکربندی یکپارچه `config.json` قرار دهید (که هر دو عملیات Export و Import را مدیریت می‌کند).
 
 ### ۲. اجرا از روی سورس‌کد پایتون (محیط توسعه)
 در صورتی که می‌خواهید پروژه را در محیط پایتون اجرا و توسعه دهید:
@@ -241,14 +237,14 @@ QueryPort.exe import --path imports --existing-data truncate --on-error skip_and
 ==================================================
 Select Operation:
   [1 / E] : Export Database queries to CSV / SQL Insert (config.json)
-  [2 / I] : Import CSV datasets into Database tables  (import_config.json)
+  [2 / I] : Import CSV datasets into Database tables  (config.json)
   [exit / q] : Exit program
 
 Enter choice [1/2] (Default: 1): 
 ```
 
-* **گزینه `1` یا `E` (Export):** فرآیند استخراج با تنظیمات `config.json` را اجرا می‌کند یا با انتخاب `n` پرامپت سفارشی `QueryPort (export)>` را در اختیارتان می‌گذارد.
-* **گزینه `2` یا `I` (Import):** فرآیند بارگذاری با تنظیمات `import_config.json` را آغاز کرده و یا پرامپت سفارشی `QueryPort (import)>` را برای آرگومان‌های دلخواه باز می‌نماید.
+* **گزینه `1` یا `E` (Export):** فرآیند استخراج با تنظیمات بخش `export` در `config.json` را اجرا می‌کند یا با انتخاب `n` پرامپت سفارشی `QueryPort (export)>` را در اختیارتان می‌گذارد.
+* **گزینه `2` یا `I` (Import):** فرآیند بارگذاری با تنظیمات بخش `import` در `config.json` را آغاز کرده و یا پرامپت سفارشی `QueryPort (import)>` را برای آرگومان‌های دلخواه باز می‌نماید.
 
 ---
 
@@ -277,9 +273,10 @@ Enter choice [1/2] (Default: 1):
 
 ---
 
-## ⚙️ راهنمای جامع فایل‌های تنظیمات (config.json و import_config.json)
+## ⚙️ راهنمای جامع تنظیمات (config.json)
 
-### ۱. فایل تنظیمات استخراج (`config.json`)
+تمام تنظیمات برنامه اعم از اتصال به پایگاه داده اوراکل، گزینه‌های استخراج (Export) و پارامترهای بارگذاری (Import) در یک فایل یکپارچه `config.json` تجمیع شده‌اند:
+
 ```json
 {
   "database": {
@@ -290,27 +287,13 @@ Enter choice [1/2] (Default: 1):
     "service_name": "ORCLPDB1",
     "schema": "TARGET_SCHEMA"
   },
-  "defaults": {
+  "export": {
     "input_path": "sql_queries",
     "output_dir": "exports",
     "format": "both",
     "batch_size": 1000
-  }
-}
-```
-
-### ۲. فایل تنظیمات ورود داده (`import_config.json`)
-```json
-{
-  "database": {
-    "user": "YOUR_DB_USER",
-    "password": "YOUR_DB_PASSWORD",
-    "host": "localhost",
-    "port": 1521,
-    "service_name": "ORCLPDB1",
-    "schema": "TARGET_SCHEMA"
   },
-  "import_settings": {
+  "import": {
     "input_path": "imports",
     "commit_mode": "batch",
     "batch_size": 5000,
@@ -321,7 +304,10 @@ Enter choice [1/2] (Default: 1):
 }
 ```
 
-### جدول مشخصات تنظیمات ورود داده (`import_settings`):
+> [!NOTE]
+> جهت حفظ سازگاری با نسخه‌های گذشته (Backward Compatibility)، نام‌های قدیمی کلیدها شامل `"defaults"` برای استخراج و `"import_settings"` برای ورود داده، و همچنین فایل‌های مجزای قدیمی همچنان بدون مشکل پشتیبانی و خوانده می‌شوند.
+
+### جدول مشخصات تنظیمات ورود داده (`import`):
 | کلید | نوع | مقدار پیش‌فرض | مقادیر معتبر | توضیحات |
 | :--- | :---: | :---: | :---: | :--- |
 | `input_path` | رشته | `imports` | مسیر فایل یا پوشه | دایرکتوری شامل فایل‌های CSV یا آدرس یک فایل CSV |
@@ -356,7 +342,7 @@ Enter choice [1/2] (Default: 1):
 | پارامتر بلند | پارامتر کوتاه | مقادیر پذیرفته‌شده | پیش‌فرض | توضیحات عملکردی |
 | :--- | :---: | :---: | :---: | :--- |
 | `--path` | `-p` | مسیر فایل یا پوشه | `imports` | مسیر فایل CSV یا پوشه حاوی فایل‌های CSV جهت ورود |
-| `--config` | `-c` | مسیر فایل JSON | `import_config.json` | آدرس فایل تنظیمات ایمپورت |
+| `--config` | `-c` | مسیر فایل JSON | `config.json` | آدرس فایل تنظیمات (با پشتیبانی از کانفیگ تفکیکی) |
 | `--schema` | `-s` | نام اسکیما | طبق کانفیگ | اسکیمای هدف دیتابیس اوراکل جهت اعتبارسنجی و درج |
 | `--commit-mode` | - | `batch`, `row`, `all` | `batch` | استراتژی ثبت تراکنش‌ها (دسته‌ای، سطری یا پایانی) |
 | `--batch-size` | `-b` | عدد صحیح مثبت | `5000` | تعداد سطرهای هر بسته جهت درج دسته‌ای و کامیت |
@@ -448,35 +434,32 @@ QueryPort.exe import --schema CRM_SCHEMA --config my_import_config.json
 پوشه `QueryPort_Production/` شامل پکیج ایزوله و کامل جهت انتقال به سرورها و محیط‌های عملیاتی است:
 
 ```text
-QueryPort_Production/
+Release/
 │
 ├── QueryPort.exe                  # فایل باینری پرتابل و بدون وابستگی
-├── config.json                    # فایل تنظیمات اتصال و استخراج
-├── import_config.json             # فایل تنظیمات اتصال و بارگذاری داده
-├── import_config.example.json     # نمونه فایل تنظیمات بارگذاری
+├── config.json                    # فایل تنظیمات یکپارچه اتصال، استخراج و بارگذاری
+├── config.example.json            # نمونه کامل تنظیمات
 ├── README.txt                     # راهنمای سریع متنی برای سرورها بدون مرورگر
 ├── README.md                      # راهنمای کامل فارسی
 └── test_sql/                      # نمونه اسکریپت‌های SQL آزمایشی
 ```
 
-برای استفاده در سرور، کافیست کل پوشه را روی سرور کپی نموده، اطلاعات اتصال را در `config.json` یا `import_config.json` ویرایش کرده و `QueryPort.exe` را اجرا نمایید.
+برای استفاده در سرور، کافیست باینری `QueryPort.exe` و فایل `config.json` را در یک مسیر قرار داده، اطلاعات دیتابیس را تکمیل و برنامه را اجرا نمایید.
 
 ---
 
 ## 🧪 آزمون‌ها و تضمین کیفیت (Testing & QA)
 
-پروژه دارای مجموعه ۳۶ آزمون واحد (Unit Tests) جامع بر پایه استاندارد `unittest` و `pytest` است که بدون نیاز به دیتابیس لایو تمام جنبه‌های برنامه را ارزیابی می‌کند:
+پروژه دارای مجموعه ۳۹ آزمون واحد (Unit Tests) جامع بر پایه ماژول استاندارد `unittest` پایتون (بدون نیاز به کتابخانه‌های شخص ثالث مانند pytest) است که بدون نیاز به دیتابیس لایو تمام جنبه‌های برنامه را ارزیابی می‌کند:
 
 ```bash
-# اجرای کلیه تست‌ها:
-pytest -v
-# یا با استاندارد پایتون:
+# اجرای کلیه تست‌ها با کتابخانه استاندارد پایتون:
 python -m unittest discover -v
 ```
 
 ### پوشش آزمون‌ها:
 * ✅ **آزمون‌های استخراج (`test_export_sql.py` - ۲۱ تست):**
-  * خواندن و اعتبارسنجی فایل تنظیمات و مدیریت خطاهای ساختاری.
+  * خواندن و اعتبارسنجی فایل تنظیمات یکپارچه و مدیریت خطاهای ساختاری.
   * پردازش و پالایش دستورات SQL*Plus (`PROMPT`, `SET`, `SPOOL`).
   * پاکسازی کامنت‌های تک‌خطی و چندخطی.
   * استخراج نام تمیز جدول با و بدون پیشوند اسکیما.
@@ -484,10 +467,10 @@ python -m unittest discover -v
   * خنثی‌سازی و اسکیپ کاراکترهای خاص در دستورات INSERT.
   * استریمینگ کم‌مصرف حافظه با `fetchmany`.
   * منوی تعاملی و پرامپت کنسول یکپارچه.
-* ✅ **آزمون‌های ورود داده (`test_import_sql.py` - ۱۵ تست):**
-  * بارگذاری و اعتبارسنجی تنظیمات اختصاصی ایمپورت و پارامترهای خط فرمان.
+* ✅ **آزمون‌های ورود داده (`test_import_sql.py` - ۱۸ تست):**
+  * بارگذاری و اعتبارسنجی تنظیمات یکپارچه ایمپورت و سازگاری با فرمت قدیمی.
   * کشف تو در تو فایل‌های CSV و استخراج نام خالص جدول.
-  * تبدیل داده‌های سلول، تبدیل رشته‌های خالی به `None` و پارس دقیق تاریخ‌ها.
+  * تبدیل داده‌های سلول، تبدیل رشته‌های خالی به `None` و پارس سریع تاریخ‌ها با `fromisoformat`.
   * استریمینگ حافظه با ژنراتور دسته‌ای در مقیاس $O(1)$.
   * ارزیابی انطباق جداول، ستون‌ها و قیود NOT NULL فاقد مقدار پیش‌فرض.
   * آزمون استراتژی‌های کامیت (`batch`, `row`, `all`).
