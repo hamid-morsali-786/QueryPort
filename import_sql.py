@@ -36,9 +36,9 @@ def parse_import_args(args: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--config", "-c",
-        default="import_config.json",
+        default="config.json",
         dest="config_path",
-        help="Path to JSON import config file (default: import_config.json)."
+        help="Path to JSON config file (default: config.json)."
     )
     parser.add_argument(
         "--path", "-p",
@@ -85,7 +85,7 @@ def parse_import_args(args: list[str] | None = None) -> argparse.Namespace:
 
 def resolve_import_settings(cli_args: argparse.Namespace, config_data: dict) -> dict:
     """Merge CLI arguments with import config defaults, giving precedence to CLI options."""
-    defaults = config_data.get("import_settings", {})
+    defaults = config_data.get("import") or config_data.get("import_settings") or {}
     db_config = dict(config_data.get("database", {}))
 
     schema = getattr(cli_args, "schema", None) or db_config.get("schema")

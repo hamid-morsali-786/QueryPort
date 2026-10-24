@@ -31,6 +31,18 @@ class TestConfigAndArgs(unittest.TestCase):
         self.assertTrue(args.dry_run)
         self.assertTrue(args.confirm)
 
+    def test_resolve_settings_from_unified_export_block(self):
+        config_data = {
+            "database": {"user": "U", "password": "P"},
+            "export": {"input_path": "my_sql", "format": "csv", "batch_size": 2000}
+        }
+        from export_sql import parse_args, resolve_settings
+        args = parse_args([])
+        settings = resolve_settings(args, config_data)
+        self.assertEqual(settings["input_path"], "my_sql")
+        self.assertEqual(settings["format"], "csv")
+        self.assertEqual(settings["batch_size"], 2000)
+
     def test_schema_config_and_cli_override(self):
         cfg = {
             "database": {"user": "APP_USER", "password": "pwd", "schema": "CORE_SCHEMA"},

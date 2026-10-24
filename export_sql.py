@@ -85,7 +85,7 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
 
 def resolve_settings(cli_args: argparse.Namespace, config_data: dict) -> dict:
     """Merge CLI arguments with config defaults, giving precedence to CLI options."""
-    defaults = config_data.get("defaults", {})
+    defaults = config_data.get("export") or config_data.get("defaults") or {}
     db_config = dict(config_data.get("database", {}))
     schema = getattr(cli_args, "schema", None) or db_config.get("schema") or defaults.get("schema")
     if schema:

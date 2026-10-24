@@ -30,6 +30,18 @@ class TestImportConfigAndArgs(unittest.TestCase):
         args = parse_import_args(["--dry-run"])
         self.assertTrue(args.dry_run)
 
+    def test_resolve_import_settings_from_unified_import_block(self):
+        cfg = {
+            "database": {"user": "APP_USER", "password": "pwd"},
+            "import": {"input_path": "my_imports", "commit_mode": "row", "batch_size": 2500}
+        }
+        from import_sql import parse_import_args, resolve_import_settings
+        args = parse_import_args([])
+        settings = resolve_import_settings(args, cfg)
+        self.assertEqual(settings["input_path"], "my_imports")
+        self.assertEqual(settings["commit_mode"], "row")
+        self.assertEqual(settings["batch_size"], 2500)
+
     def test_extract_table_name(self):
         from import_sql import extract_table_name
         self.assertEqual(extract_table_name("02_BANKPARAMETERS.csv"), "BANKPARAMETERS")
