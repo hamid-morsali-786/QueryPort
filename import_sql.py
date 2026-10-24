@@ -301,6 +301,15 @@ def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict,
         bad_file = None
         bad_writer = None
 
+        def log_bad_row(row_idx: int, exc: Exception):
+            nonlocal bad_writer, bad_file
+            if bad_writer is None:
+                bad_rows_dir.mkdir(parents=True, exist_ok=True)
+                bad_file = open(bad_rows_dir / f"{tbl_upper}_rejected.csv", "w", encoding="utf-8-sig", newline="")
+                bad_writer = csv.writer(bad_file)
+                bad_writer.writerow(["ROW_NUM", "ERROR"] + headers)
+            bad_writer.writerow([count_read - len(raw_batch) + row_idx + 1, str(exc)] + raw_batch[row_idx])
+
         for headers, raw_batch in stream_csv_batches(file_path, batch_size):
             count_read += len(raw_batch)
             cols_str = ", ".join(headers)
@@ -327,12 +336,7 @@ def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict,
                         if on_error == "abort":
                             conn.rollback()
                             raise
-                        if bad_writer is None:
-                            bad_rows_dir.mkdir(parents=True, exist_ok=True)
-                            bad_file = open(bad_rows_dir / f"{tbl_upper}_rejected.csv", "w", encoding="utf-8-sig", newline="")
-                            bad_writer = csv.writer(bad_file)
-                            bad_writer.writerow(["ROW_NUM", "ERROR"] + headers)
-                        bad_writer.writerow([count_read - len(raw_batch) + row_idx + 1, str(exc)] + raw_batch[row_idx])
+                        log_bad_row(row_idx, exc)
             else:
                 try:
                     cursor.executemany(insert_sql, cleaned_batch)
@@ -349,12 +353,7 @@ def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict,
                             count_imported += 1
                         except Exception as row_exc:
                             count_failed += 1
-                            if bad_writer is None:
-                                bad_rows_dir.mkdir(parents=True, exist_ok=True)
-                                bad_file = open(bad_rows_dir / f"{tbl_upper}_rejected.csv", "w", encoding="utf-8-sig", newline="")
-                                bad_writer = csv.writer(bad_file)
-                                bad_writer.writerow(["ROW_NUM", "ERROR"] + headers)
-                            bad_writer.writerow([count_read - len(raw_batch) + row_idx + 1, str(row_exc)] + raw_batch[row_idx])
+                            log_bad_row(row_idx, row_exc)
                     if commit_mode == "batch":
                         conn.commit()
 
