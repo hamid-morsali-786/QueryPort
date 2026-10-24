@@ -438,6 +438,44 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def _run_subprompt(runner_func, prompt_label: str, config_name: str = "config.json"):
+    """Handle interactive subprompt for export or import operation."""
+    try:
+        choice = input(f"\nExecute {prompt_label} with default {config_name} settings? [Y/n]: ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        return
+
+    if choice in ("", "y", "yes"):
+        try:
+            runner_func([])
+        except SystemExit:
+            pass
+        try:
+            input("\nExecution finished. Press Enter to exit...")
+        except (KeyboardInterrupt, EOFError):
+            pass
+        return
+
+    print(f"\nEnter {prompt_label} command or arguments (e.g. --path ... --dry-run).")
+    print("Type 'exit' or 'q' to quit:\n")
+    while True:
+        try:
+            cmd = input(f"QueryPort ({prompt_label})> ").strip()
+        except (KeyboardInterrupt, EOFError):
+            break
+        if not cmd or cmd.lower() in ("exit", "quit", "q"):
+            break
+
+        parts = shlex.split(cmd)
+        if parts and parts[0].lower().endswith((".exe", "export_sql.py", "import_sql.py")):
+            parts = parts[1:]
+
+        try:
+            runner_func(parts)
+        except SystemExit:
+            pass
+
+
 def interactive_loop():
     """Interactive unified console prompt when launched with no arguments."""
     print("==================================================")
@@ -445,7 +483,7 @@ def interactive_loop():
     print("==================================================")
     print("Select Operation:")
     print("  [1 / E] : Export Database queries to CSV / SQL Insert (config.json)")
-    print("  [2 / I] : Import CSV datasets into Database tables  (import_config.json)")
+    print("  [2 / I] : Import CSV datasets into Database tables  (config.json)")
     print("  [exit / q] : Exit program\n")
     try:
         op = input("Enter choice [1/2] (Default: 1): ").strip().lower()
@@ -457,74 +495,9 @@ def interactive_loop():
 
     if op in ("2", "i", "import"):
         import import_sql
-        try:
-            choice = input("\nExecute import with default import_config.json settings? [Y/n]: ").strip().lower()
-        except (KeyboardInterrupt, EOFError):
-            return
-        if choice in ("", "y", "yes"):
-            try:
-                import_sql.main([])
-            except SystemExit:
-                pass
-            try:
-                input("\nExecution finished. Press Enter to exit...")
-            except (KeyboardInterrupt, EOFError):
-                pass
-            return
-        
-        print("\nEnter import command or arguments (e.g. --path imports --dry-run).")
-        print("Type 'exit' or 'q' to quit:\n")
-        while True:
-            try:
-                cmd = input("QueryPort (import)> ").strip()
-            except (KeyboardInterrupt, EOFError):
-                break
-            if not cmd or cmd.lower() in ("exit", "quit", "q"):
-                break
-            parts = shlex.split(cmd)
-            if parts and parts[0].lower().endswith((".exe", "export_sql.py", "import_sql.py")):
-                parts = parts[1:]
-            try:
-                import_sql.main(parts)
-            except SystemExit:
-                pass
-        return
-
-    # Export flow (default: 1)
-    try:
-        choice = input("\nExecute export with default config.json settings? [Y/n]: ").strip().lower()
-    except (KeyboardInterrupt, EOFError):
-        return
-
-    if choice in ("", "y", "yes"):
-        try:
-            main([])
-        except SystemExit:
-            pass
-        try:
-            input("\nExecution finished. Press Enter to exit...")
-        except (KeyboardInterrupt, EOFError):
-            pass
-        return
-
-    print("\nEnter command or arguments (e.g. --path test_sql --dry-run).")
-    print("Type 'exit' or 'q' to quit:\n")
-    while True:
-        try:
-            cmd = input("QueryPort (export)> ").strip()
-        except (KeyboardInterrupt, EOFError):
-            break
-        if not cmd or cmd.lower() in ("exit", "quit", "q"):
-            break
-
-        parts = shlex.split(cmd)
-        if parts and parts[0].lower().endswith((".exe", "export_sql.py")):
-            parts = parts[1:]
-
-        try:
-            main(parts)
-        except SystemExit:
-            pass
+        _run_subprompt(import_sql.main, "import")
+    else:
+        _run_subprompt(main, "export")
 
 
 if __name__ == "__main__":
