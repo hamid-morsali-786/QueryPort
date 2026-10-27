@@ -74,6 +74,11 @@ Traditional tools often mandate heavy Oracle Client / Instant Client installatio
   - `--confirm`: Previews row counts and asks for interactive confirmation `[y/N]` before writing.
 
 ### 📥 Import Engine:
+* 🚀 **Enterprise Hybrid Concurrency Engine:**
+  - **Table-Level Parallelism:** Ingest multiple tables/CSV files in parallel with isolated worker threads.
+  - **Intra-Table Chunking:** Slices massive single CSV files (e.g. 20M rows) into 25,000–50,000 row chunks with constant $O(1)$ memory.
+  - **Oracle RAC Workload & Node Affinity:** Route worker threads across Oracle RAC services to balance cluster load and eliminate Cache Fusion block pinging.
+  - **Progressive Disclosure:** Defaults to single-threaded sequential execution (`workers=1`); zero added complexity for casual users.
 * 🔎 **Oracle Data Dictionary Pre-Validation:**
   - Validates table existence in target schema (`ALL_TABLES`).
   - Verifies 100% of CSV headers exist as columns in the Oracle table (`ALL_TAB_COLS`).
@@ -204,6 +209,11 @@ All database connection parameters, export options, and bulk import settings are
     "service_name": "ORCLPDB1",
     "schema": "TARGET_SCHEMA"
   },
+  "concurrency": {
+    "workers": 1,
+    "chunk_size": 25000,
+    "rac_services": []
+  },
   "export": {
     "input_path": "sql_queries",
     "output_dir": "exports",
@@ -256,6 +266,9 @@ Usage: `QueryPort.exe import [options]` or `QueryPort.exe --mode import [options
 | `--on-error` | - | String | `abort` | Error strategy: `abort`, `skip_and_log` |
 | `--bad-rows-dir` | - | Path | `import_errors` | Directory for rejected row CSV logs |
 | `--dry-run` | `-d` | Flag | - | Pre-validate metadata without writing data |
+| `--workers` | `-w` | Int | `1` | Number of concurrent workers (multi-file or chunking) |
+| `--chunk-size` | - | Int | `25000` | Row chunk size when splitting a single large CSV file |
+| `--rac-services` | - | Comma-list | - | Oracle RAC services for node & workload affinity routing |
 
 ---
 
@@ -277,6 +290,12 @@ QueryPort.exe --path sql_queries --format both
 # Pre-validate CSV datasets against Oracle metadata:
 QueryPort.exe import --dry-run
 
+# Ingest with 4 parallel workers across multiple files:
+QueryPort.exe import --path imports --workers 4
+
+# Ingest single 20M-row file in parallel chunks with RAC node routing:
+QueryPort.exe import --path imports/big_table.csv --workers 4 --chunk-size 50000 --rac-services SRV_NODE1,SRV_NODE2
+
 # Import with batch commits of 5000 rows and truncate existing data:
 QueryPort.exe import --path imports --existing-data truncate --batch-size 5000
 
@@ -288,14 +307,14 @@ QueryPort.exe import --commit-mode row --on-error skip_and_log
 
 ## 🧪 Testing & Quality Assurance
 
-QueryPort includes a comprehensive mock-based test suite of 39 unit tests validating all components without needing external test runners or a live Oracle database:
+QueryPort includes a comprehensive mock-based test suite of 46 unit tests validating all components without needing external test runners or a live Oracle database:
 
 ```bash
 python -m unittest discover -v
 ```
 
 * `test_export_sql.py` (21 tests): SQL parsing, comments, escaping, UTF-8-SIG BOM, streaming, and CLI routing.
-* `test_import_sql.py` (18 tests): File discovery, cell cleaning, native date parsing (`fromisoformat`), data dictionary validation, commit modes, and bad-row logging.
+* `test_import_sql.py` (25 tests): Concurrency resolution, ThreadSafeErrorLogger, sliced chunk streaming, RAC service connection dispatcher, multi-worker thread pools, file discovery, cell cleaning, native date parsing (`fromisoformat`), data dictionary validation, commit modes, and bad-row logging.
 
 ---
 

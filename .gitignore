@@ -52,6 +52,7 @@ import_errors/
 # Tooling, Testing & Framework Cache
 # ==============================================================================
 .superpowers/
+.agents/
 .pytest_cache/
 .coverage
 htmlcov/

@@ -7,6 +7,11 @@
     "service_name": "ORCLPDB1",
     "schema": "TARGET_SCHEMA"
   },
+  "concurrency": {
+    "workers": 1,
+    "chunk_size": 25000,
+    "rac_services": []
+  },
   "export": {
     "input_path": "sql_queries",
     "output_dir": "exports",

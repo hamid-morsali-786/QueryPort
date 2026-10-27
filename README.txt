@@ -50,6 +50,11 @@ CSV (سازگار با فارسی در اکسل) و اسکریپت‌های SQL 
     "service_name": "ORCLPDB1",
     "schema": "TARGET_SCHEMA"
   },
+  "concurrency": {
+    "workers": 1,
+    "chunk_size": 25000,
+    "rac_services": []
+  },
   "export": {
     "input_path": "sql_queries",
     "output_dir": "exports",
@@ -112,6 +117,9 @@ Enter choice [1/2] (Default: 1):
   --on-error <abort|skip_and_log> استراتژی خطا (پیش‌فرض: abort)
   --bad-rows-dir <مسیر>       پوشه لاگ رکوردهای رد شده (پیش‌فرض: import_errors)
   --dry-run, -d               اعتبارسنجی متادیتا و بررسی ساختار بدون درج داده
+  --workers, -w <عدد>         تعداد ترد‌های همزمان (پیش‌فرض: 1)
+  --chunk-size <عدد>          اندازه قطعات در خرد کردن تک‌فایل بزرگ (پیش‌فرض: 25000)
+  --rac-services <لیست>       لیست سرویس‌های Oracle RAC جهت مسیریابی نودها
   --config, -c <مسیر JSON>    مسیر کانفیگ (پیش‌فرض: config.json)
 
 
@@ -132,6 +140,6 @@ QueryPort.exe import --path imports --existing-data truncate --on-error skip_and
 --------------------------------------------------------------------------------
 ۶. آزمون‌ها و تضمین کیفیت (Testing & QA)
 --------------------------------------------------------------------------------
-اجرای ۳۹ آزمون واحد (Unit Tests) بدون وابستگی با ماژول استاندارد پایتون:
+اجرای ۴۶ آزمون واحد (Unit Tests) بدون وابستگی با ماژول استاندارد پایتون:
   python -m unittest discover -v
 ================================================================================
