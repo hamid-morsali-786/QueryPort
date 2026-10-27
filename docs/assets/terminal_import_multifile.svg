@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 828" width="100%" height="100%" style="background: transparent; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;">
+
+    <defs>
+      <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+      </filter>
+    </defs>
+    
+  <g filter="url(#card-shadow)">
+    <rect x="10" y="10" width="880" height="808" rx="10" ry="10" fill="#0a0f18" stroke="#1e293b" stroke-width="1.2" />
+  </g>
+  <rect x="10" y="10" width="880" height="38" rx="10" ry="10" fill="#111827" />
+  <!-- Header bottom square fill to preserve round top corners -->
+  <rect x="10" y="38" width="880" height="10" fill="#111827" />
+  <line x1="10" y1="48" x2="890" y2="48" stroke="#1e293b" stroke-width="1" />
+  <circle cx="32" cy="29" r="6" fill="#ef4444" />
+  <circle cx="52" cy="29" r="6" fill="#f59e0b" />
+  <circle cx="72" cy="29" r="6" fill="#10b981" />
+  <text x="450" y="33" fill="#94a3b8" font-size="12" font-weight="500" text-anchor="middle">QueryPort - Multi-File Parallel Ingestion</text>
+  <text x="24" y="72" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">PS C:\QueryPort&gt; </tspan><tspan fill="#f8fafc" font-weight="bold">.\QueryPort.exe </tspan><tspan fill="#ffffff" font-weight="bold">import </tspan><tspan fill="#facc15" font-weight="normal">--path </tspan><tspan fill="#93c5fd" font-weight="normal">imports/ </tspan><tspan fill="#facc15" font-weight="normal">--workers </tspan><tspan fill="#a7f3d0" font-weight="normal">4 </tspan><tspan fill="#facc15" font-weight="normal">--commit-mode </tspan><tspan fill="#93c5fd" font-weight="normal">batch </tspan><tspan fill="#facc15" font-weight="normal">--batch-size </tspan><tspan fill="#a7f3d0" font-weight="normal">5000</tspan></text>
+  <text x="24" y="116" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="normal">=== QueryPort - Oracle CSV Importer ===</tspan></text>
+  <text x="24" y="138" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Target Path    : </tspan><tspan fill="#ffffff" font-weight="bold">imports/ (4 file(s) found)</tspan></text>
+  <text x="24" y="160" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Target Schema  : </tspan><tspan fill="#93c5fd" font-weight="normal">APP_USER</tspan></text>
+  <text x="24" y="182" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Commit Mode    : </tspan><tspan fill="#cbd5e1" font-weight="normal">batch (Batch: 5000)</tspan></text>
+  <text x="24" y="204" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Existing Data  : </tspan><tspan fill="#cbd5e1" font-weight="normal">append</tspan></text>
+  <text x="24" y="226" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Error Strategy : </tspan><tspan fill="#cbd5e1" font-weight="normal">abort</tspan></text>
+  <text x="24" y="248" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Concurrency    : </tspan><tspan fill="#c084fc" font-weight="normal">4 workers (Inter-File Parallel Ingestion)</tspan></text>
+  <text x="24" y="270" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="292" font-size="13" xml:space="preserve"><tspan fill="#4ade80" font-weight="normal">[OK] </tspan><tspan fill="#cbd5e1" font-weight="normal">Connected to Oracle Database successfully.</tspan></text>
+  <text x="24" y="314" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Running pre-import data dictionary validation...</tspan></text>
+  <text x="24" y="336" font-size="13" xml:space="preserve"><tspan fill="#4ade80" font-weight="normal">[OK] </tspan><tspan fill="#cbd5e1" font-weight="normal">All 4 target tables and column structures verified successfully.</tspan></text>
+  <text x="24" y="380" font-size="13" xml:space="preserve"><tspan fill="#c084fc" font-weight="normal">Parallel Ingestion (4 workers) across 4 files ...</tspan></text>
+  <text x="24" y="402" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">  -&gt; </tspan><tspan fill="#c084fc" font-weight="normal">[Worker-1] </tspan><tspan fill="#ffffff" font-weight="bold">CUSTOMERS.csv    : </tspan><tspan fill="#a7f3d0" font-weight="normal"> 50,000 rows</tspan><tspan fill="#cbd5e1" font-weight="normal"> imported in </tspan><tspan fill="#a7f3d0" font-weight="normal">3.12s</tspan></text>
+  <text x="24" y="424" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">  -&gt; </tspan><tspan fill="#c084fc" font-weight="normal">[Worker-2] </tspan><tspan fill="#ffffff" font-weight="bold">PRODUCTS.csv     : </tspan><tspan fill="#a7f3d0" font-weight="normal"> 12,450 rows</tspan><tspan fill="#cbd5e1" font-weight="normal"> imported in </tspan><tspan fill="#a7f3d0" font-weight="normal">1.05s</tspan></text>
+  <text x="24" y="446" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">  -&gt; </tspan><tspan fill="#c084fc" font-weight="normal">[Worker-3] </tspan><tspan fill="#ffffff" font-weight="bold">TRANSACTIONS.csv : </tspan><tspan fill="#a7f3d0" font-weight="normal">180,000 rows</tspan><tspan fill="#cbd5e1" font-weight="normal"> imported in </tspan><tspan fill="#a7f3d0" font-weight="normal">9.40s</tspan></text>
+  <text x="24" y="468" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">  -&gt; </tspan><tspan fill="#c084fc" font-weight="normal">[Worker-4] </tspan><tspan fill="#ffffff" font-weight="bold">REGIONS.csv      : </tspan><tspan fill="#a7f3d0" font-weight="normal">    840 rows</tspan><tspan fill="#cbd5e1" font-weight="normal"> imported in </tspan><tspan fill="#a7f3d0" font-weight="normal">0.18s</tspan></text>
+  <text x="24" y="512" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">================================================================================</tspan></text>
+  <text x="24" y="534" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">                         IMPORT SUMMARY EXECUTION REPORT                        </tspan></text>
+  <text x="24" y="556" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">================================================================================</tspan></text>
+  <text x="24" y="578" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Target Schema: APP_USER | Commit Mode: batch</tspan></text>
+  <text x="24" y="600" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="622" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">No.  Table Name                Read Rows    Imported     Failed     Duration  </tspan></text>
+  <text x="24" y="644" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="666" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">01   </tspan><tspan fill="#cbd5e1" font-weight="normal">CUSTOMERS                 </tspan><tspan fill="#a7f3d0" font-weight="normal">50,000       </tspan><tspan fill="#4ade80" font-weight="normal">50,000       </tspan><tspan fill="#cbd5e1" font-weight="normal">0          </tspan><tspan fill="#a7f3d0" font-weight="normal">3.12s     </tspan></text>
+  <text x="24" y="688" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">02   </tspan><tspan fill="#cbd5e1" font-weight="normal">PRODUCTS                  </tspan><tspan fill="#a7f3d0" font-weight="normal">12,450       </tspan><tspan fill="#4ade80" font-weight="normal">12,450       </tspan><tspan fill="#cbd5e1" font-weight="normal">0          </tspan><tspan fill="#a7f3d0" font-weight="normal">1.05s     </tspan></text>
+  <text x="24" y="710" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">03   </tspan><tspan fill="#cbd5e1" font-weight="normal">TRANSACTIONS              </tspan><tspan fill="#a7f3d0" font-weight="normal">180,000      </tspan><tspan fill="#4ade80" font-weight="normal">180,000      </tspan><tspan fill="#cbd5e1" font-weight="normal">0          </tspan><tspan fill="#a7f3d0" font-weight="normal">9.40s     </tspan></text>
+  <text x="24" y="732" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">04   </tspan><tspan fill="#cbd5e1" font-weight="normal">REGIONS                   </tspan><tspan fill="#a7f3d0" font-weight="normal">840          </tspan><tspan fill="#4ade80" font-weight="normal">840          </tspan><tspan fill="#cbd5e1" font-weight="normal">0          </tspan><tspan fill="#a7f3d0" font-weight="normal">0.18s     </tspan></text>
+  <text x="24" y="754" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="776" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">TOTALS: 4 Tables | 243,290 Read | 243,290 Imported | 0 Failed in 9.42s</tspan></text>
+  <text x="24" y="798" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">================================================================================</tspan></text>
+</svg>

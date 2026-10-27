@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 366" width="100%" height="100%" style="background: transparent; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;">
+
+    <defs>
+      <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+      </filter>
+    </defs>
+    
+  <g filter="url(#card-shadow)">
+    <rect x="10" y="10" width="900" height="346" rx="10" ry="10" fill="#0a0f18" stroke="#1e293b" stroke-width="1.2" />
+  </g>
+  <rect x="10" y="10" width="900" height="38" rx="10" ry="10" fill="#111827" />
+  <!-- Header bottom square fill to preserve round top corners -->
+  <rect x="10" y="38" width="900" height="10" fill="#111827" />
+  <line x1="10" y1="48" x2="910" y2="48" stroke="#1e293b" stroke-width="1" />
+  <circle cx="32" cy="29" r="6" fill="#ef4444" />
+  <circle cx="52" cy="29" r="6" fill="#f59e0b" />
+  <circle cx="72" cy="29" r="6" fill="#10b981" />
+  <text x="460" y="33" fill="#94a3b8" font-size="12" font-weight="500" text-anchor="middle">QueryPort - Export with Schema Override &amp; INSERT Format</text>
+  <text x="24" y="72" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">PS C:\QueryPort&gt; </tspan><tspan fill="#f8fafc" font-weight="bold">.\QueryPort.exe </tspan><tspan fill="#facc15" font-weight="normal">--path </tspan><tspan fill="#93c5fd" font-weight="normal">sql_queries/daily_report.sql </tspan><tspan fill="#facc15" font-weight="normal">--format </tspan><tspan fill="#93c5fd" font-weight="normal">insert </tspan><tspan fill="#facc15" font-weight="normal">--schema </tspan><tspan fill="#c084fc" font-weight="normal">FIN_REPORTING</tspan></text>
+  <text x="24" y="116" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:12:10] </tspan><tspan fill="#38bdf8" font-weight="normal">[CONFIG]  </tspan><tspan fill="#cbd5e1" font-weight="normal">Schema override active: </tspan><tspan fill="#c084fc" font-weight="normal">FIN_REPORTING</tspan><tspan fill="#64748b" font-weight="normal"> (Default in config was APP_USER)</tspan></text>
+  <text x="24" y="138" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:12:10] </tspan><tspan fill="#38bdf8" font-weight="normal">[ORACLE]  </tspan><tspan fill="#cbd5e1" font-weight="normal">Connected via direct TCP to Oracle 19c</tspan></text>
+  <text x="24" y="160" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:12:11] </tspan><tspan fill="#c084fc" font-weight="normal">[SESSION] </tspan><tspan fill="#cbd5e1" font-weight="normal">Executing: </tspan><tspan fill="#ffffff" font-weight="bold">ALTER SESSION SET CURRENT_SCHEMA = FIN_REPORTING</tspan></text>
+  <text x="24" y="182" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:12:11] </tspan><tspan fill="#4ade80" font-weight="normal">[OK]      </tspan><tspan fill="#cbd5e1" font-weight="normal">Current session schema switched to </tspan><tspan fill="#c084fc" font-weight="normal">FIN_REPORTING</tspan></text>
+  <text x="24" y="204" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:12:11] </tspan><tspan fill="#38bdf8" font-weight="normal">[EXEC]    </tspan><tspan fill="#cbd5e1" font-weight="normal">Executing &#x27;daily_report.sql&#x27; against FIN_REPORTING...</tspan></text>
+  <text x="24" y="226" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:12:13] </tspan><tspan fill="#4ade80" font-weight="normal">[STREAM]  </tspan><tspan fill="#cbd5e1" font-weight="normal">Writing Oracle INSERT statements to </tspan><tspan fill="#ffffff" font-weight="bold">exports/daily_report/01_GL_DAILY_insert.sql</tspan></text>
+  <text x="24" y="248" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">           -&gt; Added </tspan><tspan fill="#93c5fd" font-weight="normal">SET DEFINE OFF;</tspan><tspan fill="#64748b" font-weight="normal"> header (prevents &amp; prompt triggers)</tspan></text>
+  <text x="24" y="270" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">           -&gt; Handled NULLs, dates (TO_DATE), numbers and escaped single quotes (&#x27;&#x27;)</tspan></text>
+  <text x="24" y="292" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">           -&gt; Appended </tspan><tspan fill="#93c5fd" font-weight="normal">COMMIT;</tspan><tspan fill="#64748b" font-weight="normal"> statement at script tail</tspan></text>
+  <text x="24" y="336" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:12:14] </tspan><tspan fill="#4ade80" font-weight="normal">[DONE]    </tspan><tspan fill="#cbd5e1" font-weight="normal">Exported </tspan><tspan fill="#a7f3d0" font-weight="normal">15,400 rows</tspan><tspan fill="#cbd5e1" font-weight="normal"> as clean SQL INSERT statements in </tspan><tspan fill="#a7f3d0" font-weight="normal">1.4s</tspan></text>
+</svg>

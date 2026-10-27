@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 696" width="100%" height="100%" style="background: transparent; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;">
+
+    <defs>
+      <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+      </filter>
+    </defs>
+    
+  <g filter="url(#card-shadow)">
+    <rect x="10" y="10" width="900" height="676" rx="10" ry="10" fill="#0a0f18" stroke="#1e293b" stroke-width="1.2" />
+  </g>
+  <rect x="10" y="10" width="900" height="38" rx="10" ry="10" fill="#111827" />
+  <!-- Header bottom square fill to preserve round top corners -->
+  <rect x="10" y="38" width="900" height="10" fill="#111827" />
+  <line x1="10" y1="48" x2="910" y2="48" stroke="#1e293b" stroke-width="1" />
+  <circle cx="32" cy="29" r="6" fill="#ef4444" />
+  <circle cx="52" cy="29" r="6" fill="#f59e0b" />
+  <circle cx="72" cy="29" r="6" fill="#10b981" />
+  <text x="460" y="33" fill="#94a3b8" font-size="12" font-weight="500" text-anchor="middle">QueryPort - CLI Help &amp; Flag Matrix</text>
+  <text x="24" y="72" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">PS C:\QueryPort&gt; </tspan><tspan fill="#f8fafc" font-weight="bold">.\QueryPort.exe </tspan><tspan fill="#ffffff" font-weight="bold">import </tspan><tspan fill="#facc15" font-weight="normal">--help</tspan></text>
+  <text x="24" y="116" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">usage: QueryPort.exe import [-h] [--config CONFIG_PATH] [--path INPUT_PATH]</tspan></text>
+  <text x="24" y="138" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">                            [--commit-mode {batch,row,all}] [--batch-size BATCH_SIZE]</tspan></text>
+  <text x="24" y="160" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">                            [--existing-data {append,truncate,skip}]</tspan></text>
+  <text x="24" y="182" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">                            [--on-error {abort,skip_and_log}] [--schema SCHEMA]</tspan></text>
+  <text x="24" y="204" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">                            [--dry-run] [--workers WORKERS] [--chunk-size CHUNK_SIZE]</tspan></text>
+  <text x="24" y="226" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">                            [--rac-services RAC_SERVICES] [--intra-table]</tspan></text>
+  <text x="24" y="270" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Validate and import CSV datasets into Oracle Database tables.</tspan></text>
+  <text x="24" y="314" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">options:</tspan></text>
+  <text x="24" y="336" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  -h, --help            </tspan><tspan fill="#cbd5e1" font-weight="normal">show this help message and exit</tspan></text>
+  <text x="24" y="358" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --config CONFIG_PATH  </tspan><tspan fill="#cbd5e1" font-weight="normal">Path to JSON config file (default: config.json)</tspan></text>
+  <text x="24" y="380" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --path INPUT_PATH     </tspan><tspan fill="#cbd5e1" font-weight="normal">Path to import CSV file or directory containing CSV files</tspan></text>
+  <text x="24" y="402" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --commit-mode {batch,row,all}</tspan></text>
+  <text x="24" y="424" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">                        </tspan><tspan fill="#cbd5e1" font-weight="normal">Commit mode: &#x27;batch&#x27; (default), &#x27;row&#x27;, or &#x27;all&#x27;</tspan></text>
+  <text x="24" y="446" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --batch-size BATCH    </tspan><tspan fill="#cbd5e1" font-weight="normal">Batch size for bulk insertion (default: 5000)</tspan></text>
+  <text x="24" y="468" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --existing-data {append,truncate,skip}</tspan></text>
+  <text x="24" y="490" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">                        </tspan><tspan fill="#cbd5e1" font-weight="normal">Action on existing data: &#x27;append&#x27; (default), &#x27;truncate&#x27;, or &#x27;skip&#x27;</tspan></text>
+  <text x="24" y="512" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --on-error {abort,skip_and_log}</tspan></text>
+  <text x="24" y="534" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">                        </tspan><tspan fill="#cbd5e1" font-weight="normal">Error strategy: &#x27;abort&#x27; (default) or &#x27;skip_and_log&#x27;</tspan></text>
+  <text x="24" y="556" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --schema SCHEMA       </tspan><tspan fill="#cbd5e1" font-weight="normal">Target database schema for tables (defaults to config)</tspan></text>
+  <text x="24" y="578" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --dry-run, -d         </tspan><tspan fill="#cbd5e1" font-weight="normal">Run pre-validation and row counts without modifying tables</tspan></text>
+  <text x="24" y="600" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --workers WORKERS, -w </tspan><tspan fill="#cbd5e1" font-weight="normal">Number of concurrent worker threads (default: 1)</tspan></text>
+  <text x="24" y="622" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --chunk-size CHUNK    </tspan><tspan fill="#cbd5e1" font-weight="normal">Number of rows per chunk for intra-table parallelism (default: 25000)</tspan></text>
+  <text x="24" y="644" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --rac-services RAC    </tspan><tspan fill="#cbd5e1" font-weight="normal">Comma-separated list of Oracle RAC service names for workload routing</tspan></text>
+  <text x="24" y="666" font-size="13" xml:space="preserve"><tspan fill="#facc15" font-weight="normal">  --intra-table         </tspan><tspan fill="#cbd5e1" font-weight="normal">Enable parallel intra-table chunk streaming for large CSV files</tspan></text>
+</svg>

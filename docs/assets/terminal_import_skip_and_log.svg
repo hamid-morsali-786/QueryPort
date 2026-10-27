@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 696" width="100%" height="100%" style="background: transparent; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;">
+
+    <defs>
+      <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+      </filter>
+    </defs>
+    
+  <g filter="url(#card-shadow)">
+    <rect x="10" y="10" width="900" height="676" rx="10" ry="10" fill="#0a0f18" stroke="#1e293b" stroke-width="1.2" />
+  </g>
+  <rect x="10" y="10" width="900" height="38" rx="10" ry="10" fill="#111827" />
+  <!-- Header bottom square fill to preserve round top corners -->
+  <rect x="10" y="38" width="900" height="10" fill="#111827" />
+  <line x1="10" y1="48" x2="910" y2="48" stroke="#1e293b" stroke-width="1" />
+  <circle cx="32" cy="29" r="6" fill="#ef4444" />
+  <circle cx="52" cy="29" r="6" fill="#f59e0b" />
+  <circle cx="72" cy="29" r="6" fill="#10b981" />
+  <text x="460" y="33" fill="#94a3b8" font-size="12" font-weight="500" text-anchor="middle">QueryPort - Fault-Tolerant Ingestion &amp; Bad Row Quarantine</text>
+  <text x="24" y="72" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">PS C:\QueryPort&gt; </tspan><tspan fill="#f8fafc" font-weight="bold">.\QueryPort.exe </tspan><tspan fill="#ffffff" font-weight="bold">import </tspan><tspan fill="#facc15" font-weight="normal">--path </tspan><tspan fill="#93c5fd" font-weight="normal">imports/orders_dirty.csv </tspan><tspan fill="#facc15" font-weight="normal">--on-error </tspan><tspan fill="#f59e0b" font-weight="normal">skip_and_log</tspan></text>
+  <text x="24" y="116" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="normal">=== QueryPort - Oracle CSV Importer ===</tspan></text>
+  <text x="24" y="138" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Target Path    : </tspan><tspan fill="#ffffff" font-weight="bold">imports/orders_dirty.csv (1 file)</tspan></text>
+  <text x="24" y="160" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Commit Mode    : </tspan><tspan fill="#cbd5e1" font-weight="normal">batch (Batch: 1000)</tspan></text>
+  <text x="24" y="182" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Error Strategy : </tspan><tspan fill="#f59e0b" font-weight="normal">skip_and_log (Fault-Tolerant Quarantine Active)</tspan></text>
+  <text x="24" y="204" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="226" font-size="13" xml:space="preserve"><tspan fill="#4ade80" font-weight="normal">[OK] </tspan><tspan fill="#cbd5e1" font-weight="normal">Connected to Oracle Database successfully.</tspan></text>
+  <text x="24" y="248" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Running pre-import data dictionary validation...</tspan></text>
+  <text x="24" y="270" font-size="13" xml:space="preserve"><tspan fill="#4ade80" font-weight="normal">[OK] </tspan><tspan fill="#cbd5e1" font-weight="normal">Table &#x27;ORDERS&#x27; verified. Starting ingestion with row-level fallback...</tspan></text>
+  <text x="24" y="314" font-size="13" xml:space="preserve"><tspan fill="#f59e0b" font-weight="normal">[WARN] </tspan><tspan fill="#64748b" font-weight="normal">Row 1,420: </tspan><tspan fill="#f87171" font-weight="normal">ORA-01400: cannot insert NULL into (&quot;APP_USER&quot;.&quot;ORDERS&quot;.&quot;CUST_ID&quot;)</tspan></text>
+  <text x="24" y="336" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">       -&gt; Isolated to: </tspan><tspan fill="#93c5fd" font-weight="normal">import_errors/ORDERS_errors_20261027_140522.csv</tspan></text>
+  <text x="24" y="358" font-size="13" xml:space="preserve"><tspan fill="#f59e0b" font-weight="normal">[WARN] </tspan><tspan fill="#64748b" font-weight="normal">Row 8,912: </tspan><tspan fill="#f87171" font-weight="normal">ORA-00001: unique constraint (APP_USER.PK_ORDERS) violated</tspan></text>
+  <text x="24" y="380" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">       -&gt; Isolated to: </tspan><tspan fill="#93c5fd" font-weight="normal">import_errors/ORDERS_errors_20261027_140522.csv</tspan></text>
+  <text x="24" y="424" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">================================================================================</tspan></text>
+  <text x="24" y="446" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">                         IMPORT SUMMARY EXECUTION REPORT                        </tspan></text>
+  <text x="24" y="468" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">================================================================================</tspan></text>
+  <text x="24" y="490" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Target Schema: APP_USER | Error Strategy: skip_and_log</tspan></text>
+  <text x="24" y="512" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="534" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">No.  Table Name                Read Rows    Imported     Failed     Duration  </tspan></text>
+  <text x="24" y="556" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="578" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">01   </tspan><tspan fill="#cbd5e1" font-weight="normal">ORDERS                    </tspan><tspan fill="#a7f3d0" font-weight="normal">50,000       </tspan><tspan fill="#4ade80" font-weight="normal">49,998       </tspan><tspan fill="#f87171" font-weight="normal">2          </tspan><tspan fill="#a7f3d0" font-weight="normal">4.15s     </tspan></text>
+  <text x="24" y="600" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="622" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">TOTALS: 1 Tables | 50,000 Read | 49,998 Imported | </tspan><tspan fill="#f87171" font-weight="normal">2 Failed</tspan><tspan fill="#ffffff" font-weight="bold"> in 4.15s</tspan></text>
+  <text x="24" y="644" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">================================================================================</tspan></text>
+  <text x="24" y="666" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="normal">[QUARANTINE] </tspan><tspan fill="#ffffff" font-weight="bold">2 bad rows isolated in: </tspan><tspan fill="#93c5fd" font-weight="normal">import_errors/ORDERS_errors_20261027_140522.csv</tspan></text>
+</svg>

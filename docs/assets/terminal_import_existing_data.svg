@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 432" width="100%" height="100%" style="background: transparent; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;">
+
+    <defs>
+      <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+      </filter>
+    </defs>
+    
+  <g filter="url(#card-shadow)">
+    <rect x="10" y="10" width="880" height="412" rx="10" ry="10" fill="#0a0f18" stroke="#1e293b" stroke-width="1.2" />
+  </g>
+  <rect x="10" y="10" width="880" height="38" rx="10" ry="10" fill="#111827" />
+  <!-- Header bottom square fill to preserve round top corners -->
+  <rect x="10" y="38" width="880" height="10" fill="#111827" />
+  <line x1="10" y1="48" x2="890" y2="48" stroke="#1e293b" stroke-width="1" />
+  <circle cx="32" cy="29" r="6" fill="#ef4444" />
+  <circle cx="52" cy="29" r="6" fill="#f59e0b" />
+  <circle cx="72" cy="29" r="6" fill="#10b981" />
+  <text x="450" y="33" fill="#94a3b8" font-size="12" font-weight="500" text-anchor="middle">QueryPort - Existing Data Policy: Atomic Truncate</text>
+  <text x="24" y="72" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">PS C:\QueryPort&gt; </tspan><tspan fill="#f8fafc" font-weight="bold">.\QueryPort.exe </tspan><tspan fill="#ffffff" font-weight="bold">import </tspan><tspan fill="#facc15" font-weight="normal">--path </tspan><tspan fill="#93c5fd" font-weight="normal">imports/ref_rates.csv </tspan><tspan fill="#facc15" font-weight="normal">--existing-data </tspan><tspan fill="#f59e0b" font-weight="normal">truncate</tspan></text>
+  <text x="24" y="116" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="normal">=== QueryPort - Oracle CSV Importer ===</tspan></text>
+  <text x="24" y="138" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Target Path    : </tspan><tspan fill="#ffffff" font-weight="bold">imports/ref_rates.csv</tspan></text>
+  <text x="24" y="160" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Target Table   : </tspan><tspan fill="#ffffff" font-weight="bold">REF_RATES</tspan></text>
+  <text x="24" y="182" font-size="13" xml:space="preserve"><tspan fill="#cbd5e1" font-weight="normal">Existing Data  : </tspan><tspan fill="#f59e0b" font-weight="normal">truncate (Atomic Table Refresh)</tspan></text>
+  <text x="24" y="204" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">--------------------------------------------------------------------------------</tspan></text>
+  <text x="24" y="226" font-size="13" xml:space="preserve"><tspan fill="#4ade80" font-weight="normal">[OK] </tspan><tspan fill="#cbd5e1" font-weight="normal">Connected to Oracle Database successfully.</tspan></text>
+  <text x="24" y="248" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:25:01] </tspan><tspan fill="#38bdf8" font-weight="normal">[CHECK]  </tspan><tspan fill="#cbd5e1" font-weight="normal">Checking existing row count in table &#x27;REF_RATES&#x27;...</tspan></text>
+  <text x="24" y="270" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:25:01] </tspan><tspan fill="#f59e0b" font-weight="normal">[FOUND]  </tspan><tspan fill="#cbd5e1" font-weight="normal">Table &#x27;REF_RATES&#x27; currently contains </tspan><tspan fill="#a7f3d0" font-weight="normal">1,250 rows</tspan></text>
+  <text x="24" y="292" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:25:01] </tspan><tspan fill="#c084fc" font-weight="normal">[DDL]    </tspan><tspan fill="#ffffff" font-weight="bold">Executing atomic: TRUNCATE TABLE REF_RATES</tspan></text>
+  <text x="24" y="314" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:25:02] </tspan><tspan fill="#4ade80" font-weight="normal">[OK]     </tspan><tspan fill="#cbd5e1" font-weight="normal">Table &#x27;REF_RATES&#x27; truncated cleanly in </tspan><tspan fill="#a7f3d0" font-weight="normal">0.04s</tspan></text>
+  <text x="24" y="336" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:25:02] </tspan><tspan fill="#38bdf8" font-weight="normal">[INGEST] </tspan><tspan fill="#cbd5e1" font-weight="normal">Streaming 1,280 fresh reference rows into clean table...</tspan></text>
+  <text x="24" y="358" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">           -&gt; [REF_RATES] Result: </tspan><tspan fill="#a7f3d0" font-weight="normal">1,280 rows</tspan><tspan fill="#cbd5e1" font-weight="normal"> imported in </tspan><tspan fill="#4ade80" font-weight="normal">0.12s</tspan></text>
+  <text x="24" y="402" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[11:25:02] </tspan><tspan fill="#4ade80" font-weight="normal">[SUCCESS] </tspan><tspan fill="#ffffff" font-weight="bold">Table refresh completed successfully. Zero storage fragmentation.</tspan></text>
+</svg>
