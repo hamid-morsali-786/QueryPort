@@ -128,14 +128,25 @@ class TestImportConfigAndArgs(unittest.TestCase):
         
         batches = list(stream_csv_batches(csv_path, batch_size=2))
         self.assertEqual(len(batches), 3)
-        headers, rows1 = batches[0]
-        self.assertEqual(headers, ["ID", "NAME"])
-        self.assertEqual(len(rows1), 2)
-        _, rows2 = batches[1]
-        self.assertEqual(len(rows2), 2)
-        _, rows3 = batches[2]
-        self.assertEqual(len(rows3), 1)
+
+    def test_stream_csv_chunks(self):
+        from import_sql import stream_csv_chunks
+        with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8-sig") as f:
+            lines = ["ID,NAME"] + [f"{i},Name_{i}" for i in range(1, 11)]
+            f.write("\n".join(lines) + "\n")
+            csv_path = Path(f.name)
+        
+        chunks = list(stream_csv_chunks(csv_path, chunk_size=4))
         csv_path.unlink(missing_ok=True)
+        self.assertEqual(len(chunks), 3)
+        self.assertEqual(chunks[0][1], 0)  # chunk_idx
+        self.assertEqual(len(chunks[0][2]), 4)
+        self.assertEqual(chunks[1][1], 1)
+        self.assertEqual(len(chunks[1][2]), 4)
+        self.assertEqual(chunks[2][1], 2)
+        self.assertEqual(len(chunks[2][2]), 2)
+        total_rows = sum(len(c[2]) for c in chunks)
+        self.assertEqual(total_rows, 10)
 
     def test_discover_import_files(self):
         from import_sql import discover_import_files

@@ -179,6 +179,32 @@ def stream_csv_batches(file_path: Path, batch_size: int = 5000) -> Generator[tup
             yield headers, batch
 
 
+def stream_csv_chunks(file_path: Path, chunk_size: int = 25000) -> Generator[tuple[list[str], int, list[list[Any]]], None, None]:
+    """
+    Generator streaming CSV rows in chunk slices of chunk_size with O(1) memory.
+    Yields (headers, chunk_index, list_of_raw_rows).
+    """
+    with open(file_path, "r", encoding="utf-8-sig", newline="", errors="replace") as f:
+        reader = csv.reader(f)
+        try:
+            raw_headers = next(reader)
+        except StopIteration:
+            return
+        headers = [h.strip().upper() for h in raw_headers]
+        chunk_idx = 0
+        chunk = []
+        for row in reader:
+            if not row or all(cell.strip() == "" for cell in row):
+                continue
+            chunk.append(row)
+            if len(chunk) >= chunk_size:
+                yield (headers, chunk_idx, chunk)
+                chunk_idx += 1
+                chunk = []
+        if chunk:
+            yield (headers, chunk_idx, chunk)
+
+
 def discover_import_files(input_path: Path) -> list[tuple[Path, str]]:
     """
     Discover all target CSV files and their inferred table names.
