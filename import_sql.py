@@ -10,6 +10,7 @@ import csv
 import datetime
 import itertools
 import json
+import queue
 import re
 import sys
 import threading
@@ -496,66 +497,100 @@ def import_single_file_parallel(file_path: Path, table_name: str, table_meta: di
     binds_str = ", ".join(f":{i+1}" for i in range(len(headers)))
     insert_sql = f"INSERT INTO {tbl_upper} ({cols_str}) VALUES ({binds_str})"
 
-    total_read = 0
-    total_imported = 0
-    total_failed = 0
+    task_queue: queue.Queue = queue.Queue(maxsize=max(workers * 2, 4))
+    abort_event = threading.Event()
+    worker_errors = []
+    stats_lock = threading.Lock()
+    stats = {"read": 0, "imported": 0, "failed": 0}
 
-    def process_chunk(chunk_idx: int, raw_rows: list[list[Any]], worker_idx: int) -> tuple[int, int, int]:
+    def _chunk_worker(worker_idx: int) -> None:
         cfg = get_worker_connection_config(base_db, rac_services, worker_idx)
-        w_read = len(raw_rows)
-        w_imported = 0
-        w_failed = 0
-        cleaned_batch = []
-        for row in raw_rows:
-            cleaned_row = []
-            for idx, col_name in enumerate(headers):
-                val = row[idx] if idx < len(row) else None
-                col_type = table_meta.get(col_name, {}).get("data_type")
-                cleaned_row.append(clean_cell_value(val, col_type))
-            cleaned_batch.append(cleaned_row)
-
-        with create_import_connection(cfg) as w_conn:
-            with w_conn.cursor() as cur:
-                try:
-                    cur.executemany(insert_sql, cleaned_batch)
-                    w_conn.commit()
-                    w_imported += len(cleaned_batch)
-                except Exception as exc:
-                    if on_error == "abort":
-                        w_conn.rollback()
-                        raise
-                    for r_idx, r in enumerate(cleaned_batch):
+        try:
+            with create_import_connection(cfg) as w_conn:
+                with w_conn.cursor() as cur:
+                    while not abort_event.is_set():
                         try:
-                            cur.execute(insert_sql, r)
-                            w_conn.commit()
-                            w_imported += 1
-                        except Exception as r_exc:
-                            w_failed += 1
-                            if shared_logger:
-                                shared_logger.log(chunk_idx * chunk_size + r_idx + 1, r_exc, raw_rows[r_idx])
-                    w_conn.commit()
-        return (w_read, w_imported, w_failed)
+                            item = task_queue.get(timeout=0.1)
+                        except queue.Empty:
+                            continue
+                        if item is None:
+                            task_queue.task_done()
+                            break
+                        c_idx, raw_rows = item
+                        try:
+                            w_read = len(raw_rows)
+                            cleaned_batch = [
+                                [clean_cell_value(row[idx] if idx < len(row) else None, table_meta.get(col, {}).get("data_type"))
+                                 for idx, col in enumerate(headers)]
+                                for row in raw_rows
+                            ]
+                            try:
+                                cur.executemany(insert_sql, cleaned_batch)
+                                w_conn.commit()
+                                with stats_lock:
+                                    stats["read"] += w_read
+                                    stats["imported"] += w_read
+                            except Exception as exc:
+                                if on_error == "abort":
+                                    w_conn.rollback()
+                                    abort_event.set()
+                                    with stats_lock:
+                                        worker_errors.append(exc)
+                                    task_queue.task_done()
+                                    break
+                                w_imp = 0
+                                w_fail = 0
+                                for r_idx, r in enumerate(cleaned_batch):
+                                    try:
+                                        cur.execute(insert_sql, r)
+                                        w_conn.commit()
+                                        w_imp += 1
+                                    except Exception as r_exc:
+                                        w_fail += 1
+                                        if shared_logger:
+                                            shared_logger.log(c_idx * chunk_size + r_idx + 1, r_exc, raw_rows[r_idx])
+                                w_conn.commit()
+                                with stats_lock:
+                                    stats["read"] += w_read
+                                    stats["imported"] += w_imp
+                                    stats["failed"] += w_fail
+                        except Exception as exc:
+                            abort_event.set()
+                            with stats_lock:
+                                worker_errors.append(exc)
+                        finally:
+                            task_queue.task_done()
+        except Exception as conn_exc:
+            abort_event.set()
+            with stats_lock:
+                worker_errors.append(conn_exc)
+
+    threads = []
+    for w_i in range(workers):
+        t = threading.Thread(target=_chunk_worker, args=(w_i,), daemon=True)
+        t.start()
+        threads.append(t)
 
     try:
-        all_chunks = itertools.chain([first_chunk], chunks_gen)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            futures = []
-            for w_idx, (hdrs, c_idx, c_rows) in enumerate(all_chunks):
-                fut = executor.submit(process_chunk, c_idx, c_rows, w_idx)
-                futures.append(fut)
-            for fut in concurrent.futures.as_completed(futures):
-                r_read, r_imp, r_fail = fut.result()
-                total_read += r_read
-                total_imported += r_imp
-                total_failed += r_fail
+        for hdrs, c_idx, c_rows in itertools.chain([first_chunk], chunks_gen):
+            if abort_event.is_set():
+                break
+            task_queue.put((c_idx, c_rows))
+        for _ in range(workers):
+            task_queue.put(None)
+        for t in threads:
+            t.join()
     finally:
         if shared_logger:
             shared_logger.close()
 
+    if worker_errors and on_error == "abort":
+        raise worker_errors[0]
+
     return {
-        "read": total_read,
-        "imported": total_imported,
-        "failed": total_failed,
+        "read": stats["read"],
+        "imported": stats["imported"],
+        "failed": stats["failed"],
         "skipped": False,
         "duration": time.time() - t0
     }

@@ -381,6 +381,37 @@ class TestImportConfigAndArgs(unittest.TestCase):
             self.assertEqual(res["read"], 10)
             self.assertEqual(res["failed"], 0)
 
+    def test_import_single_file_parallel_connection_reuse_and_queue(self):
+        from unittest.mock import MagicMock, patch
+        from import_sql import import_single_file_parallel
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / "REUSE_TEST.csv"
+            # 10 rows with chunk_size 2 -> 5 chunks
+            lines = ["ID,NAME"] + [f"{i},User{i}" for i in range(10)]
+            csv_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+            mock_conn = MagicMock()
+            mock_cursor = MagicMock()
+            mock_conn.__enter__.return_value = mock_conn
+            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+
+            table_meta = {"ID": {"data_type": "NUMBER"}, "NAME": {"data_type": "VARCHAR2"}}
+            settings = {
+                "database": {"user": "APP_USER", "schema": "APP_USER"},
+                "commit_mode": "batch",
+                "batch_size": 2,
+                "existing_data_action": "append",
+                "on_error": "abort",
+                "bad_rows_dir": str(Path(tmpdir) / "errors")
+            }
+
+            with patch("import_sql.create_import_connection", return_value=mock_conn) as mock_create_conn:
+                res = import_single_file_parallel(csv_path, "TEST_TABLE", table_meta, settings, workers=2, rac_services=[], chunk_size=2)
+
+            self.assertEqual(res["imported"], 10)
+            # 5 chunks with 2 workers: exactly 2 connections must be opened, NOT 5!
+            self.assertEqual(mock_create_conn.call_count, 2)
+
     def test_run_import_multi_file_parallel(self):
         from unittest.mock import MagicMock, patch
         from import_sql import run_import
