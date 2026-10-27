@@ -10,6 +10,7 @@ import datetime
 import json
 import re
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any, Generator
@@ -304,7 +305,29 @@ def format_validation_report(errors: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict, settings: dict) -> dict:
+class ThreadSafeErrorLogger:
+    """Thread-safe CSV logger for rejected import rows."""
+    def __init__(self, bad_path: Path, headers: list[str]):
+        self.bad_path = bad_path
+        bad_path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
+        self._file = open(bad_path, "w", encoding="utf-8-sig", newline="")
+        self._writer = csv.writer(self._file)
+        self._writer.writerow(["ROW_NUM", "ERROR"] + headers)
+        self._file.flush()
+
+    def log(self, row_num: int, exc: Exception, row_data: list[Any]):
+        with self._lock:
+            self._writer.writerow([row_num, str(exc)] + list(row_data))
+            self._file.flush()
+
+    def close(self):
+        with self._lock:
+            if not self._file.closed:
+                self._file.close()
+
+
+def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict, settings: dict, error_logger: ThreadSafeErrorLogger | None = None) -> dict:
     """
     Import a single CSV file into target Oracle table according to commit_mode, existing_data_action, and on_error.
     Returns stats dict: {"read": int, "imported": int, "failed": int, "skipped": bool, "duration": float}
@@ -330,17 +353,16 @@ def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict,
         count_read = 0
         count_imported = 0
         count_failed = 0
-        bad_file = None
-        bad_writer = None
+        local_logger = error_logger
+        created_logger = False
 
         def log_bad_row(row_idx: int, exc: Exception):
-            nonlocal bad_writer, bad_file
-            if bad_writer is None:
+            nonlocal local_logger, created_logger
+            if local_logger is None:
                 bad_rows_dir.mkdir(parents=True, exist_ok=True)
-                bad_file = open(bad_rows_dir / f"{tbl_upper}_rejected.csv", "w", encoding="utf-8-sig", newline="")
-                bad_writer = csv.writer(bad_file)
-                bad_writer.writerow(["ROW_NUM", "ERROR"] + headers)
-            bad_writer.writerow([count_read - len(raw_batch) + row_idx + 1, str(exc)] + raw_batch[row_idx])
+                local_logger = ThreadSafeErrorLogger(bad_rows_dir / f"{tbl_upper}_rejected.csv", headers)
+                created_logger = True
+            local_logger.log(count_read - len(raw_batch) + row_idx + 1, exc, raw_batch[row_idx])
 
         for headers, raw_batch in stream_csv_batches(file_path, batch_size):
             count_read += len(raw_batch)
@@ -392,8 +414,8 @@ def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict,
         if commit_mode == "all":
             conn.commit()
 
-        if bad_file:
-            bad_file.close()
+        if created_logger and local_logger:
+            local_logger.close()
 
         return {
             "read": count_read,

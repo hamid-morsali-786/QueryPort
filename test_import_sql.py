@@ -94,6 +94,32 @@ class TestImportConfigAndArgs(unittest.TestCase):
         dt4 = clean_cell_value("2026-10-24 12:30:00.123456", col_type="TIMESTAMP")
         self.assertEqual(dt4, datetime.datetime(2026, 10, 24, 12, 30, 0, 123456))
 
+    def test_thread_safe_error_logger_concurrency(self):
+        from import_sql import ThreadSafeErrorLogger
+        import concurrent.futures
+        import csv
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bad_path = Path(tmpdir) / "test_rejected.csv"
+            logger = ThreadSafeErrorLogger(bad_path, ["ID", "NAME"])
+
+            def worker(thread_id):
+                for i in range(50):
+                    logger.log(thread_id * 100 + i, Exception("Simulated error"), [i, f"Name_{i}"])
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                futures = [executor.submit(worker, t) for t in range(10)]
+                concurrent.futures.wait(futures)
+
+            logger.close()
+
+            with open(bad_path, "r", encoding="utf-8-sig") as f:
+                rows = list(csv.reader(f))
+
+            # 1 header row + 500 data rows
+            self.assertEqual(len(rows), 501)
+            self.assertEqual(rows[0], ["ROW_NUM", "ERROR", "ID", "NAME"])
+
     def test_stream_csv_batches(self):
         from import_sql import stream_csv_batches
         with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8-sig") as f:
