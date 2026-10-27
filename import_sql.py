@@ -21,6 +21,14 @@ load_import_config = load_config
 create_import_connection = create_connection
 
 
+def get_worker_connection_config(base_db_config: dict, rac_services: list[str], worker_index: int) -> dict:
+    """Return tailored database connection config with assigned RAC service if configured."""
+    cfg = dict(base_db_config)
+    if rac_services:
+        cfg["service_name"] = rac_services[worker_index % len(rac_services)]
+    return cfg
+
+
 def parse_import_args(args: list[str] | None = None) -> argparse.Namespace:
     """Parse command line arguments for import operation."""
     parser = argparse.ArgumentParser(

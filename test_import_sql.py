@@ -148,6 +148,24 @@ class TestImportConfigAndArgs(unittest.TestCase):
         total_rows = sum(len(c[2]) for c in chunks)
         self.assertEqual(total_rows, 10)
 
+    def test_get_worker_connection_config_rac_routing(self):
+        from import_sql import get_worker_connection_config
+        base_cfg = {"user": "U", "service_name": "DEFAULT_SRV"}
+        rac_services = ["NODE1_SRV", "NODE2_SRV"]
+
+        cfg0 = get_worker_connection_config(base_cfg, rac_services, 0)
+        self.assertEqual(cfg0["service_name"], "NODE1_SRV")
+
+        cfg1 = get_worker_connection_config(base_cfg, rac_services, 1)
+        self.assertEqual(cfg1["service_name"], "NODE2_SRV")
+
+        cfg2 = get_worker_connection_config(base_cfg, rac_services, 2)
+        self.assertEqual(cfg2["service_name"], "NODE1_SRV")
+
+        # Fallback when rac_services is empty
+        cfg_default = get_worker_connection_config(base_cfg, [], 0)
+        self.assertEqual(cfg_default["service_name"], "DEFAULT_SRV")
+
     def test_discover_import_files(self):
         from import_sql import discover_import_files
         with tempfile.TemporaryDirectory() as tmpdir:
