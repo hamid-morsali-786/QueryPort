@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 608" width="100%" height="100%" style="background: transparent; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;">
+
+    <defs>
+      <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+      </filter>
+    </defs>
+    
+  <g filter="url(#card-shadow)">
+    <rect x="10" y="10" width="860" height="588" rx="10" ry="10" fill="#0a0f18" stroke="#1e293b" stroke-width="1.2" />
+  </g>
+  <rect x="10" y="10" width="860" height="38" rx="10" ry="10" fill="#111827" />
+  <!-- Header bottom square fill to preserve round top corners -->
+  <rect x="10" y="38" width="860" height="10" fill="#111827" />
+  <line x1="10" y1="48" x2="870" y2="48" stroke="#1e293b" stroke-width="1" />
+  <circle cx="32" cy="29" r="6" fill="#ef4444" />
+  <circle cx="52" cy="29" r="6" fill="#f59e0b" />
+  <circle cx="72" cy="29" r="6" fill="#10b981" />
+  <text x="440" y="33" fill="#94a3b8" font-size="12" font-weight="500" text-anchor="middle">QueryPort - Interactive Console Mode</text>
+  <text x="24" y="72" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">PS C:\QueryPort&gt; </tspan><tspan fill="#f8fafc" font-weight="bold">.\QueryPort.exe</tspan></text>
+  <text x="24" y="116" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">==========================================================================</tspan></text>
+  <text x="24" y="138" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  QueryPort - Oracle Database High-Performance ETL Engine (v2.0)</tspan></text>
+  <text x="24" y="160" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">==========================================================================</tspan></text>
+  <text x="24" y="182" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="normal">[i] </tspan><tspan fill="#cbd5e1" font-weight="normal">Connected to : </tspan><tspan fill="#ffffff" font-weight="bold">PROD_ORACLE_DB</tspan><tspan fill="#64748b" font-weight="normal"> (Oracle 19c Enterprise Edition Release 19.3.0.0.0)</tspan></text>
+  <text x="24" y="204" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="normal">[i] </tspan><tspan fill="#cbd5e1" font-weight="normal">Database Role: </tspan><tspan fill="#ffffff" font-weight="bold">RAC Primary Cluster</tspan><tspan fill="#64748b" font-weight="normal"> (2 Active Nodes detected)</tspan></text>
+  <text x="24" y="226" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="normal">[i] </tspan><tspan fill="#cbd5e1" font-weight="normal">Session Mode : </tspan><tspan fill="#4ade80" font-weight="normal">Thin Client (Direct TCP)</tspan><tspan fill="#64748b" font-weight="normal"> | Character Set: AL32UTF8</tspan></text>
+  <text x="24" y="270" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">Select execution mode:</tspan></text>
+  <text x="24" y="292" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">  [1] </tspan><tspan fill="#cbd5e1" font-weight="normal">Export SQL Queries to CSV / Excel</tspan></text>
+  <text x="24" y="314" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">  [2] </tspan><tspan fill="#cbd5e1" font-weight="normal">Import Files into Database (Table Auto-Detect)</tspan></text>
+  <text x="24" y="336" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">  [3] </tspan><tspan fill="#cbd5e1" font-weight="normal">Validate Schema &amp; Dry-Run Ingestion (Zero Risk)</tspan></text>
+  <text x="24" y="358" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">  [4] </tspan><tspan fill="#cbd5e1" font-weight="normal">Exit</tspan></text>
+  <text x="24" y="402" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">Enter choice [1-4] (default: 1): </tspan><tspan fill="#ffffff" font-weight="bold">2</tspan></text>
+  <text x="24" y="424" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">Directory path to import [default: imports]: </tspan><tspan fill="#93c5fd" font-weight="normal">data/sales_q3</tspan></text>
+  <text x="24" y="446" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">Target table name [default: auto-detect from filename]: </tspan><tspan fill="#ffffff" font-weight="bold">SALES_ORDERS</tspan></text>
+  <text x="24" y="468" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">Enter concurrency level (workers) [default: 4]: </tspan><tspan fill="#ffffff" font-weight="bold">4</tspan></text>
+  <text x="24" y="490" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">Enable intra-table chunk streaming? [Y/n]: </tspan><tspan fill="#ffffff" font-weight="bold">Y</tspan></text>
+  <text x="24" y="512" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">Batch size for executemany [default: 1000]: </tspan><tspan fill="#ffffff" font-weight="bold">5000</tspan></text>
+  <text x="24" y="556" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="normal">[*] Initializing 4 parallel worker threads with streaming queues...</tspan></text>
+  <text x="24" y="578" font-size="13" xml:space="preserve"><tspan fill="#4ade80" font-weight="normal">[+] Ready. Ingestion started successfully.</tspan></text>
+</svg>

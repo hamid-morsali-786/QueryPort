@@ -28,6 +28,7 @@
 - [Key Features](#-key-features)
 - [Feature Comparison Matrix](#-feature-comparison-matrix)
 - [System Architecture](#-system-architecture)
+- [Visual Terminal & CLI Guide](docs/terminal_guide.md)
 - [Installation & Quick Start](#-installation--quick-start)
 - [Unified Interactive Console Mode](#-unified-interactive-console-mode)
 - [CSV Importer Subsystem](#-csv-importer-subsystem)
@@ -191,6 +192,8 @@ pip install -r requirements.txt
 
 When launching `QueryPort.exe` without arguments (e.g. double-clicking):
 
+![QueryPort Interactive Console](docs/assets/terminal_interactive.svg)
+
 ```text
 ==================================================
            QueryPort Unified Console              
@@ -220,6 +223,8 @@ In Oracle RAC, uncoordinated concurrent writes across nodes to the same table tr
   QueryPort.exe import --path imports --workers 4 --rac-services APP_NODE1_SRV,APP_NODE2_SRV,APP_NODE3_SRV,APP_NODE4_SRV
   ```
 * QueryPort binds each worker thread round-robin to a specific RAC service, distributing cluster workload evenly while maintaining optimal cache localization.
+
+![QueryPort RAC Concurrency](docs/assets/terminal_concurrency_rac.svg)
 
 ### 3. ACID Safety & Thread-Safe Error Logging
 * Pre-validation (`validate_import_plan`) and table truncation (`TRUNCATE TABLE`) execute single-threaded before worker threads start, eliminating race conditions.
@@ -313,15 +318,23 @@ Usage: `QueryPort.exe import [options]` or `QueryPort.exe --mode import [options
 # Preview row counts without exporting:
 QueryPort.exe --path test_sql --dry-run
 
-# Export to both CSV and SQL INSERT:
-QueryPort.exe --path sql_queries --format both
+# Parallel export to both CSV and Excel formatted XLSX:
+QueryPort.exe --path sql_queries --format both --batch-size 10000 --workers 4
+```
 
+![QueryPort Parallel Export](docs/assets/terminal_export.svg)
+
+```bash
 # -------------------------------------------------------------
 # Import Operations
 # -------------------------------------------------------------
-# Pre-validate CSV datasets against Oracle metadata:
-QueryPort.exe import --dry-run
+# Pre-validate CSV datasets against Oracle metadata (Dry-Run):
+QueryPort.exe import --path imports/customers.csv --dry-run
+```
 
+![QueryPort Dry-Run Pre-Validation](docs/assets/terminal_import_dryrun.svg)
+
+```bash
 # Ingest with 4 parallel workers across multiple files:
 QueryPort.exe import --path imports --workers 4
 

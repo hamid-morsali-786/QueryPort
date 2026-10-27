@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 586" width="100%" height="100%" style="background: transparent; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;">
+
+    <defs>
+      <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+      </filter>
+    </defs>
+    
+  <g filter="url(#card-shadow)">
+    <rect x="10" y="10" width="910" height="566" rx="10" ry="10" fill="#0a0f18" stroke="#1e293b" stroke-width="1.2" />
+  </g>
+  <rect x="10" y="10" width="910" height="38" rx="10" ry="10" fill="#111827" />
+  <!-- Header bottom square fill to preserve round top corners -->
+  <rect x="10" y="38" width="910" height="10" fill="#111827" />
+  <line x1="10" y1="48" x2="920" y2="48" stroke="#1e293b" stroke-width="1" />
+  <circle cx="32" cy="29" r="6" fill="#ef4444" />
+  <circle cx="52" cy="29" r="6" fill="#f59e0b" />
+  <circle cx="72" cy="29" r="6" fill="#10b981" />
+  <text x="465" y="33" fill="#94a3b8" font-size="12" font-weight="500" text-anchor="middle">QueryPort - Oracle RAC Concurrency &amp; Intra-Table Load Balancing</text>
+  <text x="24" y="72" font-size="13" xml:space="preserve"><tspan fill="#38bdf8" font-weight="bold">PS C:\QueryPort&gt; </tspan><tspan fill="#f8fafc" font-weight="bold">.\QueryPort.exe </tspan><tspan fill="#ffffff" font-weight="bold">import </tspan><tspan fill="#facc15" font-weight="normal">--path </tspan><tspan fill="#93c5fd" font-weight="normal">imports/tx_huge.csv </tspan><tspan fill="#facc15" font-weight="normal">--workers </tspan><tspan fill="#a7f3d0" font-weight="normal">4 </tspan><tspan fill="#facc15" font-weight="normal">--rac-services </tspan><tspan fill="#c084fc" font-weight="normal">APP_NODE1_SRV,APP_NODE2_SRV </tspan><tspan fill="#facc15" font-weight="normal">--intra-table</tspan></text>
+  <text x="24" y="116" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[10:32:00] </tspan><tspan fill="#c084fc" font-weight="normal">[RAC CLUSTER] </tspan><tspan fill="#cbd5e1" font-weight="normal">Detected 2 Oracle RAC services. Dynamic connection dispatch active:</tspan></text>
+  <text x="24" y="138" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">              -&gt; Node 1: </tspan><tspan fill="#ffffff" font-weight="bold">APP_NODE1_SRV</tspan><tspan fill="#64748b" font-weight="normal"> (Dedicated Buffer Cache on RAC Node #1)</tspan></text>
+  <text x="24" y="160" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">              -&gt; Node 2: </tspan><tspan fill="#ffffff" font-weight="bold">APP_NODE2_SRV</tspan><tspan fill="#64748b" font-weight="normal"> (Dedicated Buffer Cache on RAC Node #2)</tspan></text>
+  <text x="24" y="182" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[10:32:00] </tspan><tspan fill="#38bdf8" font-weight="normal">[PARTITION]   </tspan><tspan fill="#cbd5e1" font-weight="normal">Intra-table chunking active for &#x27;tx_huge.csv&#x27; (1,200,000 rows)</tspan></text>
+  <text x="24" y="204" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[10:32:00] </tspan><tspan fill="#38bdf8" font-weight="normal">[AFFINITY]    </tspan><tspan fill="#c084fc" font-weight="normal">Worker-1, Worker-3 -&gt; APP_NODE1_SRV</tspan><tspan fill="#64748b" font-weight="normal"> | </tspan><tspan fill="#c084fc" font-weight="normal">Worker-2, Worker-4 -&gt; APP_NODE2_SRV</tspan></text>
+  <text x="24" y="248" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[10:32:04] </tspan><tspan fill="#c084fc" font-weight="normal">[Worker-1/Node1] </tspan><tspan fill="#cbd5e1" font-weight="normal">Chunk #01 (rows 1-25,000) committed via executemany </tspan><tspan fill="#64748b" font-weight="normal">[1.9s]</tspan></text>
+  <text x="24" y="270" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[10:32:04] </tspan><tspan fill="#c084fc" font-weight="normal">[Worker-2/Node2] </tspan><tspan fill="#cbd5e1" font-weight="normal">Chunk #02 (rows 25,001-50,000) committed via executemany </tspan><tspan fill="#64748b" font-weight="normal">[1.8s]</tspan></text>
+  <text x="24" y="292" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[10:32:07] </tspan><tspan fill="#c084fc" font-weight="normal">[Worker-3/Node1] </tspan><tspan fill="#cbd5e1" font-weight="normal">Chunk #03 (rows 50,001-75,000) committed via executemany </tspan><tspan fill="#64748b" font-weight="normal">[2.0s]</tspan></text>
+  <text x="24" y="314" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[10:32:07] </tspan><tspan fill="#c084fc" font-weight="normal">[Worker-4/Node2] </tspan><tspan fill="#cbd5e1" font-weight="normal">Chunk #04 (rows 75,001-100,000) committed via executemany </tspan><tspan fill="#64748b" font-weight="normal">[1.9s]</tspan></text>
+  <text x="24" y="336" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">           ... [Stream processing 48 chunks concurrently without GC buffer contention] ...</tspan></text>
+  <text x="24" y="358" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">[10:33:14] </tspan><tspan fill="#4ade80" font-weight="normal">[PROGRESS]       </tspan><tspan fill="#cbd5e1" font-weight="normal">Completed 1,200,000 / 1,200,000 rows (100%) - </tspan><tspan fill="#4ade80" font-weight="normal">0 Bad Rows</tspan></text>
+  <text x="24" y="402" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">=========================== RAC INGESTION REPORT ===========================</tspan></text>
+  <text x="24" y="424" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">Total Rows Inserted : </tspan><tspan fill="#a7f3d0" font-weight="normal">1,200,000 rows</tspan><tspan fill="#64748b" font-weight="normal"> (Bulk executemany in 5,000 batches)</tspan></text>
+  <text x="24" y="446" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">Bad Records / Errs  : </tspan><tspan fill="#4ade80" font-weight="normal">0 rejected rows</tspan><tspan fill="#64748b" font-weight="normal"> (Logged to bad_records.log)</tspan></text>
+  <text x="24" y="468" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">RAC Node 1 Load     : </tspan><tspan fill="#c084fc" font-weight="normal">600,000 rows (50.0%)</tspan><tspan fill="#64748b" font-weight="normal"> across 24 chunks</tspan></text>
+  <text x="24" y="490" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">RAC Node 2 Load     : </tspan><tspan fill="#c084fc" font-weight="normal">600,000 rows (50.0%)</tspan><tspan fill="#64748b" font-weight="normal"> across 24 chunks</tspan></text>
+  <text x="24" y="512" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">Total Execution Time: </tspan><tspan fill="#a7f3d0" font-weight="normal">74.2 seconds</tspan></text>
+  <text x="24" y="534" font-size="13" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">Effective Throughput: </tspan><tspan fill="#4ade80" font-weight="normal">16,172 rows/sec</tspan><tspan fill="#64748b" font-weight="normal"> (Zero Global Cache Contention)</tspan></text>
+  <text x="24" y="556" font-size="13" xml:space="preserve"><tspan fill="#64748b" font-weight="normal">============================================================================</tspan></text>
+</svg>

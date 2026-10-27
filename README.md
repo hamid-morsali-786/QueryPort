@@ -31,6 +31,7 @@
 - [ویژگی‌های کلیدی](#ویژگیهای-کلیدی-key-features)
 - [جدول مقایسه قابلیت‌ها](#جدول-مقایسه-قابلیتها)
 - [معماری سیستم (Architecture)](#معماری-سیستم-architecture)
+- [راهنمای تصویری ترمینال و خط فرمان (Visual Terminal Guide)](docs/terminal_guide.md)
 - [نصب و راه‌اندازی](#نصب-و-راهاندازی-installation)
 - [شروع سریع و جریان‌های کاری خط فرمان (CLI)](#شروع-سریع-و-جریانهای-کاری-خط-فرمان-cli)
 - [فایل اجرایی مستقل و کنسول تعاملی یکپارچه (Unified Interactive Console)](#فایل-اجرایی-مستقل-و-کنسول-تعاملی-یکپارچه-unified-interactive-console)
@@ -222,9 +223,11 @@ QueryPort.exe --mode export
 # پیش‌نمایش تعداد رکوردهای فایل خاص بدون استخراج:
 QueryPort.exe --path test_sql/01_CUSTOMERS_AND_ACCOUNTS.sql --dry-run
 
-# استخراج پوشه به هر دو قالب CSV و SQL INSERT:
-QueryPort.exe --path sql_queries --format both --output my_exports
+# استخراج پوشه به هر دو قالب CSV و SQL INSERT به همراه موازی‌سازی چندتردی:
+QueryPort.exe --path sql_queries --format both --batch-size 10000 --workers 4
 ```
+
+![QueryPort Parallel Export](docs/assets/terminal_export.svg)
 
 ### عملیات بارگذاری و ایمپورت (Import):
 ```bash
@@ -245,6 +248,8 @@ QueryPort.exe import --path imports --existing-data truncate --on-error skip_and
 ## 🖱️ فایل اجرایی مستقل و کنسول تعاملی یکپارچه (Unified Interactive Console)
 
 هنگامی که روی فایل `QueryPort.exe` دو بار کلیک می‌کنید، کنسول تعاملی هوشمند باز شده و از بسته شدن ناگهانی صفحه جلوگیری می‌کند:
+
+![QueryPort Interactive Console](docs/assets/terminal_interactive.svg)
 
 ```text
 ==================================================
@@ -276,6 +281,10 @@ Enter choice [1/2] (Default: 1):
 2. تطابق تمامی ستون‌های هدر فایل CSV با ستون‌های تعریف‌شده در جدول اوراکل ارزیابی می‌گردد.
 3. در صورت وجود ستونی با قید `NOT NULL` در جدول که در فایل CSV وجود ندارد و فاقد مقدار `DATA_DEFAULT` باشد، سامانه خطای جامع صادر کرده و بلافاصله متوقف می‌شود.
 
+با اجرای سوییچ `--dry-run`، پیش‌نمایش جدول تطابق ستون‌ها و صحت اعتبارسنجی بدون کوچکترین ریسک نمایش داده می‌شود:
+
+![QueryPort Schema Pre-Validation](docs/assets/terminal_import_dryrun.svg)
+
 ### ۳. استراتژی‌های تراکنش و کامیت (Commit Strategies)
 * **`batch` (پیش‌فرض):** به ازای هر $N$ سطر (مثلاً ۵,۰۰۰ رکورد)، دستور `commit` صادر می‌شود. ایده‌آل برای بهینه‌سازی منابع UNDO tablespace و جلوگیری از قفل‌های سنگین.
 * **`row`:** کامیت پس از هر رکورد منفرد (بسیار دقیق با اطمینان حداکثری).
@@ -303,6 +312,8 @@ Enter choice [1/2] (Default: 1):
   QueryPort.exe import --path imports --workers 4 --rac-services APP_NODE1_SRV,APP_NODE2_SRV,APP_NODE3_SRV,APP_NODE4_SRV
   ```
 * موتور به صورت گردشی (Round-Robin)، هر Worker Thread را مستقیماً به سرویس اختصاصی آن نود متصل می‌کند تا ترافیک شبکه کلاستر و تداخل اینترکانکت به حداقل ممکن برسد.
+
+![QueryPort RAC Concurrency](docs/assets/terminal_concurrency_rac.svg)
 
 ### ۳. امنیت تراکنش و لاگر خطای ضدتداخل (Thread-Safe Error Logger)
 * اعتبارسنجی دیکشنری داده اوراکل (`validate_import_plan`) و عملیات `TRUNCATE TABLE` قبل از استارت هرگونه ترد به صورت Single-Threaded اجرا می‌شوند تا از Race Condition پیشگیری شود.
