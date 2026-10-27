@@ -481,6 +481,13 @@ def import_single_file_parallel(file_path: Path, table_name: str, table_meta: di
             with init_conn.cursor() as cur:
                 cur.execute(f"TRUNCATE TABLE {tbl_upper}")
                 init_conn.commit()
+    elif existing_action == "skip":
+        with create_import_connection(base_db) as init_conn:
+            with init_conn.cursor() as cur:
+                cur.execute(f"SELECT COUNT(*) FROM {tbl_upper}")
+                row = cur.fetchone()
+                if row and row[0] > 0:
+                    return {"read": 0, "imported": 0, "failed": 0, "skipped": True, "duration": time.time() - t0}
 
     shared_logger = None
     chunks_gen = stream_csv_chunks(file_path, chunk_size=chunk_size)
@@ -669,13 +676,24 @@ def run_import(settings: dict) -> int:
             print(f"    -> Result: {status} in {res['duration']:.2f}s")
         elif workers > 1 and len(file_plan) > 1:
             print(f"Parallel Ingestion ({workers} workers) across {len(file_plan)} files ...")
+            if settings.get("existing_data_action") == "truncate":
+                unique_tables = {tb.upper() for _, tb in file_plan}
+                with create_import_connection(settings["database"]) as trunc_conn:
+                    with trunc_conn.cursor() as cur:
+                        for tbl_name in sorted(unique_tables):
+                            cur.execute(f"TRUNCATE TABLE {tbl_name}")
+                        trunc_conn.commit()
+            worker_settings = dict(settings)
+            if worker_settings.get("existing_data_action") == "truncate":
+                worker_settings["existing_data_action"] = "append"
+
             def process_file_worker(item_idx: int, file_tuple: tuple[Path, str]) -> dict:
                 fp, tb = file_tuple
                 w_idx = item_idx - 1
                 t_meta = meta.get(tb, {})
                 w_cfg = get_worker_connection_config(settings["database"], rac_services, w_idx)
                 with create_import_connection(w_cfg) as w_conn:
-                    r = import_single_file(w_conn, fp, tb, t_meta, settings)
+                    r = import_single_file(w_conn, fp, tb, t_meta, worker_settings)
                     r["table"] = tb
                     r["file"] = fp.name
                     return r

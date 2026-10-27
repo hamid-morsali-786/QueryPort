@@ -412,6 +412,75 @@ class TestImportConfigAndArgs(unittest.TestCase):
             # 5 chunks with 2 workers: exactly 2 connections must be opened, NOT 5!
             self.assertEqual(mock_create_conn.call_count, 2)
 
+    def test_parallel_existing_data_skip_honored(self):
+        from unittest.mock import MagicMock, patch
+        from import_sql import import_single_file_parallel
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / "SKIP_TEST.csv"
+            csv_path.write_text("ID\n1\n2\n", encoding="utf-8")
+
+            mock_conn = MagicMock()
+            mock_cursor = MagicMock()
+            mock_conn.__enter__.return_value = mock_conn
+            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+            # Table already has 5 rows:
+            mock_cursor.fetchone.return_value = (5,)
+
+            table_meta = {"ID": {"data_type": "NUMBER"}}
+            settings = {
+                "database": {"user": "APP_USER", "schema": "APP_USER"},
+                "commit_mode": "batch",
+                "batch_size": 2,
+                "existing_data_action": "skip",
+                "on_error": "abort",
+                "bad_rows_dir": str(Path(tmpdir) / "errors")
+            }
+
+            with patch("import_sql.create_import_connection", return_value=mock_conn):
+                res = import_single_file_parallel(csv_path, "TEST_TABLE", table_meta, settings, workers=2, rac_services=[], chunk_size=2)
+
+            self.assertTrue(res["skipped"])
+            self.assertEqual(res["imported"], 0)
+
+    def test_run_import_multi_file_single_threaded_truncate(self):
+        from unittest.mock import MagicMock, patch
+        from import_sql import run_import
+        with tempfile.TemporaryDirectory() as tmpdir:
+            f1 = Path(tmpdir) / "01_T1.csv"
+            f1.write_text("ID\n1\n", encoding="utf-8")
+            sub = Path(tmpdir) / "sub"
+            sub.mkdir()
+            f2 = sub / "01_T1.csv"  # Same table name T1 in a subfolder!
+            f2.write_text("ID\n2\n", encoding="utf-8")
+
+            mock_conn = MagicMock()
+            mock_cursor = MagicMock()
+            mock_conn.__enter__.return_value = mock_conn
+            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+            mock_cursor.fetchall.return_value = [("T1", "ID", "NUMBER", "N", None)]
+
+            settings = {
+                "input_path": tmpdir,
+                "database": {"user": "APP_USER", "schema": "APP_USER"},
+                "commit_mode": "batch",
+                "batch_size": 100,
+                "existing_data_action": "truncate",
+                "on_error": "abort",
+                "bad_rows_dir": str(Path(tmpdir) / "errors"),
+                "dry_run": False,
+                "concurrency": {"workers": 2, "chunk_size": 25000, "rac_services": []}
+            }
+
+            with patch("import_sql.create_import_connection", return_value=mock_conn):
+                run_import(settings)
+
+            # Table T1 should be truncated only once, not twice!
+            truncate_calls = [
+                call for call in mock_cursor.execute.call_args_list
+                if "TRUNCATE TABLE" in str(call)
+            ]
+            self.assertEqual(len(truncate_calls), 1)
+
     def test_run_import_multi_file_parallel(self):
         from unittest.mock import MagicMock, patch
         from import_sql import run_import
