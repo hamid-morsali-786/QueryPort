@@ -71,17 +71,44 @@ def parse_import_args(args: list[str] | None = None) -> argparse.Namespace:
         dest="dry_run",
         help="Run pre-validation and row counts without modifying database tables."
     )
+    parser.add_argument(
+        "--workers", "-w",
+        type=int,
+        dest="workers",
+        help="Number of concurrent worker threads (default: 1)."
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        dest="chunk_size",
+        help="Number of rows per chunk for intra-table parallelism."
+    )
+    parser.add_argument(
+        "--rac-services",
+        dest="rac_services",
+        help="Comma-separated list of Oracle RAC service names for workload routing."
+    )
     return parser.parse_args(args)
 
 
 def resolve_import_settings(cli_args: argparse.Namespace, config_data: dict) -> dict:
     """Merge CLI arguments with import config defaults, giving precedence to CLI options."""
     defaults = config_data.get("import") or config_data.get("import_settings") or {}
+    concurrency_cfg = config_data.get("concurrency") or {}
     db_config = dict(config_data.get("database", {}))
 
     schema = getattr(cli_args, "schema", None) or db_config.get("schema")
     if schema:
         db_config["schema"] = schema
+
+    cli_rac = getattr(cli_args, "rac_services", None)
+    if cli_rac:
+        rac_services = [s.strip() for s in cli_rac.split(",") if s.strip()]
+    else:
+        rac_services = list(concurrency_cfg.get("rac_services", []))
+
+    workers = getattr(cli_args, "workers", None) or concurrency_cfg.get("workers", 1)
+    chunk_size = getattr(cli_args, "chunk_size", None) or concurrency_cfg.get("chunk_size", 25000)
 
     return {
         "input_path": getattr(cli_args, "input_path", None) or defaults.get("input_path", "imports"),
@@ -91,7 +118,12 @@ def resolve_import_settings(cli_args: argparse.Namespace, config_data: dict) -> 
         "on_error": getattr(cli_args, "on_error", None) or defaults.get("on_error", "abort"),
         "bad_rows_dir": defaults.get("bad_rows_dir", "import_errors"),
         "dry_run": getattr(cli_args, "dry_run", False),
-        "database": db_config
+        "database": db_config,
+        "concurrency": {
+            "workers": max(1, int(workers)),
+            "chunk_size": max(1000, int(chunk_size)),
+            "rac_services": rac_services
+        }
     }
 
 

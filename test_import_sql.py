@@ -30,6 +30,30 @@ class TestImportConfigAndArgs(unittest.TestCase):
         args = parse_import_args(["--dry-run"])
         self.assertTrue(args.dry_run)
 
+    def test_resolve_concurrency_settings_defaults(self):
+        cfg = {"database": {"user": "APP_USER"}}
+        args = parse_import_args([])
+        settings = resolve_import_settings(args, cfg)
+        self.assertIn("concurrency", settings)
+        self.assertEqual(settings["concurrency"]["workers"], 1)
+        self.assertEqual(settings["concurrency"]["chunk_size"], 25000)
+        self.assertEqual(settings["concurrency"]["rac_services"], [])
+
+    def test_resolve_concurrency_settings_from_config_and_cli(self):
+        cfg = {
+            "database": {"user": "APP_USER"},
+            "concurrency": {
+                "workers": 2,
+                "chunk_size": 10000,
+                "rac_services": ["SRV1", "SRV2"]
+            }
+        }
+        args = parse_import_args(["--workers", "4", "--rac-services", "SRV_A,SRV_B", "--chunk-size", "50000"])
+        settings = resolve_import_settings(args, cfg)
+        self.assertEqual(settings["concurrency"]["workers"], 4)
+        self.assertEqual(settings["concurrency"]["chunk_size"], 50000)
+        self.assertEqual(settings["concurrency"]["rac_services"], ["SRV_A", "SRV_B"])
+
     def test_resolve_import_settings_from_unified_import_block(self):
         cfg = {
             "database": {"user": "APP_USER", "password": "pwd"},
