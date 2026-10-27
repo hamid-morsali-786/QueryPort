@@ -166,6 +166,34 @@ class TestImportConfigAndArgs(unittest.TestCase):
         cfg_default = get_worker_connection_config(base_cfg, [], 0)
         self.assertEqual(cfg_default["service_name"], "DEFAULT_SRV")
 
+    def test_rac_service_routing_clears_stale_dsn(self):
+        from import_sql import get_worker_connection_config
+        cfg = {"user": "u", "dsn": "host:1521/OLD_SRV", "service_name": "OLD_SRV"}
+        out = get_worker_connection_config(cfg, ["RAC1_SRV", "RAC2_SRV"], 0)
+        self.assertEqual(out["service_name"], "RAC1_SRV")
+        self.assertNotIn("dsn", out)
+
+    def test_thread_safe_error_logger_lazy_file_creation(self):
+        from import_sql import ThreadSafeErrorLogger
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bad_path = Path(tmpdir) / "LAZY_REJECTED.csv"
+            logger = ThreadSafeErrorLogger(bad_path, ["COL1", "COL2"])
+            try:
+                self.assertFalse(bad_path.exists())
+                logger.log(1, Exception("test error"), ["val1", "val2"])
+                self.assertTrue(bad_path.exists())
+            finally:
+                logger.close()
+
+    def test_resolve_concurrency_settings_null_json_values(self):
+        import argparse
+        from import_sql import resolve_import_settings
+        cfg = {"concurrency": {"workers": None, "chunk_size": None, "rac_services": None}}
+        args = argparse.Namespace()
+        res = resolve_import_settings(args, cfg)
+        self.assertEqual(res["concurrency"]["workers"], 1)
+        self.assertEqual(res["concurrency"]["chunk_size"], 25000)
+
     def test_discover_import_files(self):
         from import_sql import discover_import_files
         with tempfile.TemporaryDirectory() as tmpdir:

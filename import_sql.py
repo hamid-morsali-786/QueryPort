@@ -29,6 +29,7 @@ def get_worker_connection_config(base_db_config: dict, rac_services: list[str], 
     cfg = dict(base_db_config)
     if rac_services:
         cfg["service_name"] = rac_services[worker_index % len(rac_services)]
+        cfg.pop("dsn", None)
     return cfg
 
 
@@ -117,10 +118,10 @@ def resolve_import_settings(cli_args: argparse.Namespace, config_data: dict) -> 
     if cli_rac:
         rac_services = [s.strip() for s in cli_rac.split(",") if s.strip()]
     else:
-        rac_services = list(concurrency_cfg.get("rac_services", []))
+        rac_services = list(concurrency_cfg.get("rac_services") or [])
 
-    workers = getattr(cli_args, "workers", None) or concurrency_cfg.get("workers", 1)
-    chunk_size = getattr(cli_args, "chunk_size", None) or concurrency_cfg.get("chunk_size", 25000)
+    workers = getattr(cli_args, "workers", None) or concurrency_cfg.get("workers") or 1
+    chunk_size = getattr(cli_args, "chunk_size", None) or concurrency_cfg.get("chunk_size") or 25000
 
     return {
         "input_path": getattr(cli_args, "input_path", None) or defaults.get("input_path", "imports"),
@@ -343,24 +344,33 @@ def format_validation_report(errors: list[dict]) -> str:
 
 
 class ThreadSafeErrorLogger:
-    """Thread-safe CSV logger for rejected import rows."""
+    """Thread-safe lazy CSV logger for rejected import rows."""
     def __init__(self, bad_path: Path, headers: list[str]):
         self.bad_path = bad_path
-        bad_path.parent.mkdir(parents=True, exist_ok=True)
+        self.headers = headers
         self._lock = threading.Lock()
-        self._file = open(bad_path, "w", encoding="utf-8-sig", newline="")
-        self._writer = csv.writer(self._file)
-        self._writer.writerow(["ROW_NUM", "ERROR"] + headers)
-        self._file.flush()
+        self._file = None
+        self._writer = None
+
+    def _ensure_file(self):
+        if self._file is None:
+            self.bad_path.parent.mkdir(parents=True, exist_ok=True)
+            file_exists = self.bad_path.exists() and self.bad_path.stat().st_size > 0
+            self._file = open(self.bad_path, "a", encoding="utf-8-sig", newline="")
+            self._writer = csv.writer(self._file)
+            if not file_exists:
+                self._writer.writerow(["ROW_NUM", "ERROR"] + self.headers)
+                self._file.flush()
 
     def log(self, row_num: int, exc: Exception, row_data: list[Any]):
         with self._lock:
+            self._ensure_file()
             self._writer.writerow([row_num, str(exc)] + list(row_data))
             self._file.flush()
 
     def close(self):
         with self._lock:
-            if not self._file.closed:
+            if self._file is not None and not self._file.closed:
                 self._file.close()
 
 
