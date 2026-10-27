@@ -31,7 +31,8 @@
 - [Installation & Quick Start](#-installation--quick-start)
 - [Unified Interactive Console Mode](#-unified-interactive-console-mode)
 - [CSV Importer Subsystem](#-csv-importer-subsystem)
-- [Configuration Guides (config.json & import_config.json)](#-configuration-guides)
+- [Enterprise Concurrency & RAC Affinity](#-enterprise-concurrency--rac-affinity)
+- [Configuration Guide (config.json)](#-configuration-guide-configjson)
 - [CLI Reference](#-cli-reference)
 - [Ready-to-Run Cheat Sheet](#-ready-to-run-cheat-sheet)
 - [Testing & Quality Assurance](#-testing--quality-assurance)
@@ -102,6 +103,7 @@ Traditional tools often mandate heavy Oracle Client / Instant Client installatio
 | **Data Dictionary Pre-Validation** | ✅ Strict pre-check | ❌ During import | ❌ Rare | ⚠️ Basic |
 | **Commit Modes (Batch / Row / All)** | ✅ Configurable | ⚠️ Limited | ❌ Needs custom code | ⚠️ Limited |
 | **Bad-Row CSV Error Export** | ✅ Built-in | ⚠️ Manual review | ❌ Needs custom logging | ⚠️ Manual review |
+| **Multi-Worker & Oracle RAC Affinity** | ✅ Advanced (Table + Chunk + RAC) | ❌ No (Single session) | ⚠️ Custom concurrency required | ❌ No |
 
 ---
 
@@ -112,7 +114,7 @@ flowchart TD
     subgraph Inputs and Configurations
         SQLIn["SQL Scripts (.sql)"]
         CSVIn["CSV Datasets (.csv)"]
-        Config["Unified Config<br/>config.json"]
+        Config["Unified Config<br/>config.json (incl. Concurrency & RAC)"]
     end
 
     subgraph QueryPort Dual Engine
@@ -125,16 +127,21 @@ flowchart TD
             SQLGen["Oracle INSERT Generator"]
         end
 
-        subgraph Import Engine
+        subgraph Import & Concurrency Engine
             Validator["Data Dictionary Validator<br/>(ALL_TABLES & ALL_TAB_COLS)"]
-            Cleaner["Type & Date Sanitizer"]
-            Batcher["Bulk Ingestion (executemany)"]
-            ErrLog["Rejected Rows CSV Logger"]
+            Router{"Concurrency Router"}
+            MultiFile["Multi-File Parallelism<br/>(Table-Level)"]
+            Chunking["Giant CSV Slicer<br/>(Intra-Table Chunking)"]
+            ThreadPool["Worker Thread Pool<br/>(ThreadPoolExecutor)"]
+            ErrLog["Thread-Safe Error Logger<br/>(threading.Lock)"]
         end
     end
 
-    subgraph Oracle Database
-        Oracle[("Oracle Database Server<br/>Thin Mode Driver (Zero Client)")]
+    subgraph Oracle Database RAC Cluster
+        RAC["Oracle Database 19c RAC<br/>Thin Mode Protocol"]
+        Node1[("Node 1 / Service 1")]
+        Node2[("Node 2 / Service 2")]
+        NodeN[("Node N / Service N")]
     end
 
     Config --> CLI
@@ -145,15 +152,18 @@ flowchart TD
     CLI --> Validator
 
     Parser --> StreamExp
-    StreamExp <-->|"Fetch Batches"| Oracle
+    StreamExp <-->|"Fetch Batches"| RAC
     StreamExp --> CSVGen
     StreamExp --> SQLGen
 
-    Validator <-->|"Validate Schema & NOT NULLs"| Oracle
-    Validator --> Cleaner
-    Cleaner --> Batcher
-    Batcher -->|"Bulk Parameterized Insert"| Oracle
-    Batcher -.->|"On Error (skip_and_log)"| ErrLog
+    Validator <-->|"Validate Schema & NOT NULLs"| RAC
+    Validator --> Router
+    Router -->|"Multiple Files"| MultiFile --> ThreadPool
+    Router -->|"Single Large CSV"| Chunking --> ThreadPool
+    ThreadPool <-->|"Worker 1 -> RAC Service 1"| Node1
+    ThreadPool <-->|"Worker 2 -> RAC Service 2"| Node2
+    ThreadPool <-->|"Worker N -> RAC Service N"| NodeN
+    ThreadPool -.->|"On Row Error (skip_and_log)"| ErrLog
 ```
 
 ---
@@ -192,6 +202,28 @@ Select Operation:
 
 Enter choice [1/2] (Default: 1): 
 ```
+
+---
+
+## ⚡ Enterprise Concurrency & Oracle RAC Affinity
+
+When ingesting massive datasets (e.g., 20+ million rows) or integrating with multi-node **Oracle Real Application Clusters (RAC)**, single-threaded ingestion can underutilize network interconnects and storage bandwidth. **QueryPort** features a high-performance **Hybrid Concurrency Engine**:
+
+### 1. Hybrid Concurrency Architecture
+* **Table-Level Multi-File Parallelism:** When multiple CSV files are present in the import directory, `--workers N` allocates dedicated worker threads to ingest each table/file concurrently. Because each worker operates on an independent table segment, there is zero cross-table block contention.
+* **Intra-Table Chunking for Giant CSV Files:** When loading a single multi-gigabyte file (e.g. 20M rows), the engine streams sliced row batches in zero-copy chunks (configurable via `--chunk-size`, default 25,000) and feeds them into worker threads concurrently while maintaining bounded $O(1)$ memory.
+
+### 2. RAC Service Routing & Workload Affinity
+In Oracle RAC, uncoordinated concurrent writes across nodes to the same table trigger **Cache Fusion block pinging** (`gc current block busy`, `gc buffer busy acquire` wait events).
+* **The Solution:** Using `--rac-services` (or `"rac_services"` in `config.json`), specify the names of designated Oracle RAC services:
+  ```bash
+  QueryPort.exe import --path imports --workers 4 --rac-services APP_NODE1_SRV,APP_NODE2_SRV,APP_NODE3_SRV,APP_NODE4_SRV
+  ```
+* QueryPort binds each worker thread round-robin to a specific RAC service, distributing cluster workload evenly while maintaining optimal cache localization.
+
+### 3. ACID Safety & Thread-Safe Error Logging
+* Pre-validation (`validate_import_plan`) and table truncation (`TRUNCATE TABLE`) execute single-threaded before worker threads start, eliminating race conditions.
+* Rejected rows are serialized via [`ThreadSafeErrorLogger`](file:///e:/project/QueryPort/import_sql.py#L335) with a `threading.Lock`, guaranteeing atomic, uncorrupted CSV error logs in `import_errors/<TABLE>_rejected.csv`.
 
 ---
 

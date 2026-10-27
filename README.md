@@ -36,6 +36,7 @@
 - [فایل اجرایی مستقل و کنسول تعاملی یکپارچه (Unified Interactive Console)](#فایل-اجرایی-مستقل-و-کنسول-تعاملی-یکپارچه-unified-interactive-console)
 - [موتور استخراج داده‌ها (Export Engine)](#موتور-استخراج-دادهها-export-engine)
 - [موتور هوشمند بارگذاری و ورود داده‌ها (CSV Importer Subsystem)](#موتور-هوشمند-بارگذاری-و-ورود-دادهها-csv-importer-subsystem)
+- [موتور موازی‌سازی سازمانی و اتصال هوشمند به کلاستر RAC (Enterprise Concurrency & RAC Affinity)](#موتور-موازیسازی-سازمانی-و-اتصال-هوشمند-به-کلاستر-rac-enterprise-concurrency--rac-affinity)
 - [راهنمای جامع تنظیمات (config.json)](#راهنمای-جامع-تنظیمات-configjson)
 - [جدول جامع تمام پارامترهای خط فرمان (CLI Reference)](#جدول-جامع-تمام-پارامترهای-خط-فرمان-cli-reference)
 - [دستورات آماده کپی و اجرا (Ready-to-Run Cheat Sheet)](#دستورات-آماده-کپی-و-اجرا-ready-to-run-cheat-sheet)
@@ -112,6 +113,7 @@
 | **پیش‌نمایش تعداد سطرها قبل از اجرا** | ✅ `--dry-run` و `--confirm` | ❌ خیر | ❌ خیر | ❌ خیر |
 | **خروجی تمیز SQL INSERT با اسکیپ کامل** | ✅ استاندارد با `SET DEFINE OFF` | ⚠️ فرمت دستی اکسپورت | ❌ نیاز به کدنویسی طولانی | ⚠️ نیاز به تنظیم Wizard |
 | **پشتیبانی از پوشه‌بندی و بچ فایل‌ها** | ✅ خودکار بر اساس نام فایل | ❌ خروجی دستی تک‌تک | ❌ نیاز به پیاده‌سازی دستی | ❌ خروجی دستی |
+| **موازی‌سازی چندتردی و تفکیک بار نودهای RAC** | ✅ پیشرفته (Table + Chunk + RAC) | ❌ خیر (تک‌سشن) | ⚠️ نیازمند کدنویسی همروندی | ❌ خیر |
 
 ---
 
@@ -122,7 +124,7 @@ flowchart TD
     subgraph منابع و تنظیمات ورودی
         SQLIn["اسکریپت‌های ورودی (.sql)"]
         CSVIn["فایل‌های CSV دیتاست (.csv)"]
-        Config["تنظیمات یکپارچه<br/>config.json"]
+        Config["تنظیمات یکپارچه<br/>config.json (شامل Concurrency & RAC)"]
     end
 
     subgraph هسته پردازش دوگانه QueryPort
@@ -135,16 +137,21 @@ flowchart TD
             SQLGen["تولید اسکریپت استاندارد INSERT<br/>(Escape Quotes, Timestamps, Commits)"]
         end
 
-        subgraph موتور ورود داده - Import Engine
+        subgraph موتور ورود داده و همزمانی - Import & Concurrency Engine
             Validator["اعتبارسنجی دیکشنری داده اوراکل<br/>(ALL_TABLES & ALL_TAB_COLS)"]
-            Cleaner["تبدیل خودکار انواع داده و تاریخ‌ها<br/>(Clean Cell Values & NULL Handling)"]
-            Batcher["درج پارامتریک دسته‌ای<br/>(cursor.executemany & Commit Modes)"]
-            ErrLog["ثبت رکوردهای مردود در فایل خطا<br/>(import_errors/TABLE_rejected.csv)"]
+            Router{"مسیریاب همزمانی<br/>(Concurrency Router)"}
+            MultiFile["موازی‌سازی چند فایلی<br/>(Table-Level Parallelism)"]
+            Chunking["خرد کردن تک‌فایل بزرگ<br/>(Intra-Table Chunking)"]
+            ThreadPool["استخر تردها<br/>(ThreadPoolExecutor)"]
+            ErrLog["لاگر ضدتداخل خطا<br/>(ThreadSafeErrorLogger)"]
         end
     end
 
-    subgraph پایگاه داده اوراکل
-        Oracle[("Oracle Database 19c / 21c / 23ai<br/>Thin Mode Protocol (Zero Client)")]
+    subgraph کلاستر پایگاه داده اوراکل
+        RAC["Oracle Database 19c RAC<br/>Thin Mode Network Protocol"]
+        Node1[("Node 1 / Service 1")]
+        Node2[("Node 2 / Service 2")]
+        NodeN[("Node N / Service N")]
     end
 
     Config --> CLI
@@ -155,15 +162,18 @@ flowchart TD
     CLI --> Validator
 
     Parser --> StreamExp
-    StreamExp <-->|"واکشی دسته‌ای داده‌ها"| Oracle
+    StreamExp <-->|"واکشی دسته‌ای داده‌ها"| RAC
     StreamExp --> CSVGen
     StreamExp --> SQLGen
 
-    Validator <-->|"استعلام متادیتای ساختار و NOT NULL"| Oracle
-    Validator --> Cleaner
-    Cleaner --> Batcher
-    Batcher -->|"درج دسته‌ای داده‌ها با بایند متغیرها"| Oracle
-    Batcher -.->|"در حالت skip_and_log"| ErrLog
+    Validator <-->|"استعلام متادیتای ساختار و NOT NULL"| RAC
+    Validator --> Router
+    Router -->|"چندین فایل"| MultiFile --> ThreadPool
+    Router -->|"تک‌فایل حجیم"| Chunking --> ThreadPool
+    ThreadPool <-->|"Worker 1 -> RAC Service 1"| Node1
+    ThreadPool <-->|"Worker 2 -> RAC Service 2"| Node2
+    ThreadPool <-->|"Worker N -> RAC Service N"| NodeN
+    ThreadPool -.->|"در صورت خطای سطر با قفل اتمیک"| ErrLog
 ```
 
 ---
@@ -275,6 +285,28 @@ Enter choice [1/2] (Default: 1):
 در صورت فعال بودن `--on-error skip_and_log`:
 * خطاهای داده‌ای (نظیر مقادیر نامعتبر کلید خارجی یا طول فیلد) مانع از توقف کل عملیات نمی‌شوند.
 * رکوردهای رد شده همراه با شماره ردیف و پیام دقیق خطای اوراکل در مسیر `import_errors/<TABLE>_rejected.csv` ثبت می‌گردند.
+
+---
+
+## ⚡ موتور موازی‌سازی سازمانی و هماهنگی با کلاستر RAC (Enterprise Concurrency & RAC Affinity)
+
+در محیط‌های دیتابیسی بزرگ و سازمانی که با حجم‌های ده‌ها میلیون سطری یا کلاسترهای چندنودی **Oracle Real Application Clusters (RAC)** سر و کار دارند، بارگذاری داده‌ها با چالش‌های گلوگاه شبکه و رقابت کلاستر مواجه می‌شود. **QueryPort** یک معماری موازی‌سازی هوشمند دو سطحی (Hybrid Concurrency) را پیاده‌سازی کرده است:
+
+### ۱. معماری همزمانی هیبرید (Hybrid Concurrency Architecture)
+* **موازی‌سازی چند فایلی (Table-Level Parallelism):** هنگامی که چندین فایل CSV در پوشه ورودی وجود دارد و پرچم `--workers N` مشخص شده است، هر فایل/جدول به یک Worker Thread مجزا تخصیص داده می‌شود. از آنجا که جداول از یکدیگر مستقل هستند، هیچ‌گونه رقابت بلاکی در سطح پایگاه داده شکل نمی‌گیرد.
+* **خرد کردن تک‌فایل بزرگ (Intra-Table Chunking):** در صورتی که کاربر یک تک‌فایل عظیم (مثلاً ۲۰ میلیون سطری) را برای یک جدول بارگذاری کند، موتور به طور خودکار فایل را در قطعات با اندازه قابل تنظیم (پیش‌فرض ۲۵,۰۰۰ سطر با `--chunk-size`) خرد کرده و بدون لود کل فایل در حافظه ($O(1)$ RAM)، قطعات را به صورت موازی بین تردها توزیع می‌کند.
+
+### ۲. مسیریابی سرویس‌ها و تفکیک بار روی نودهای RAC (Workload & Node Affinity)
+در کلاستر RAC، اگر چندین سشن بدون تفکیک نود روی یک جدول ایندکس‌دار مشترک بنویسند، پدیده **Block Pinging** و رویدادهای انتظاری سنگین شبکه کلاستر (نظیر `gc current block busy` و `gc buffer busy acquire`) رخ می‌دهد.
+* **راهکار QueryPort:** با استفاده از پارامتر `--rac-services` یا کلید `rac_services` در کانفیگ، می‌توان لیستی از نام سرویس‌های متصل به نودهای مختلف RAC را تعیین کرد:
+  ```bash
+  QueryPort.exe import --path imports --workers 4 --rac-services APP_NODE1_SRV,APP_NODE2_SRV,APP_NODE3_SRV,APP_NODE4_SRV
+  ```
+* موتور به صورت گردشی (Round-Robin)، هر Worker Thread را مستقیماً به سرویس اختصاصی آن نود متصل می‌کند تا ترافیک شبکه کلاستر و تداخل اینترکانکت به حداقل ممکن برسد.
+
+### ۳. امنیت تراکنش و لاگر خطای ضدتداخل (Thread-Safe Error Logger)
+* اعتبارسنجی دیکشنری داده اوراکل (`validate_import_plan`) و عملیات `TRUNCATE TABLE` قبل از استارت هرگونه ترد به صورت Single-Threaded اجرا می‌شوند تا از Race Condition پیشگیری شود.
+* در صورت بروز خطا در هر یک از سطرها، کلاس [`ThreadSafeErrorLogger`](file:///e:/project/QueryPort/import_sql.py#L335) با استفاده از قفل اتمیک `threading.Lock` اطلاعات رکوردهای رد شده را به صورت خط‌به‌خط و بدون تداخل در فایل `import_errors/<TABLE>_rejected.csv` می‌نویسد.
 
 ---
 
@@ -405,8 +437,14 @@ QueryPort.exe import --path imports --existing-data truncate --batch-size 5000
 # بارگذاری مطمئن با کامیت سطر به سطر و ذخیره رکوردهای رد شده در لاگ:
 QueryPort.exe import --commit-mode row --on-error skip_and_log
 
+# بارگذاری فوق‌سریع موازی با ۴ ترد روی چندین فایل:
+QueryPort.exe import --path imports --workers 4
+
+# بارگذاری تک‌فایل بزرگ ۲۰ میلیون سطری با خرد کردن ۵۰ هزارتایی و توزیع روی سرویس‌های نودهای RAC:
+QueryPort.exe import --path imports/large_table.csv --workers 4 --chunk-size 50000 --rac-services RAC_SRV1,RAC_SRV2
+
 # اجرای بارگذاری روی اسکیمای مجزا:
-QueryPort.exe import --schema CRM_SCHEMA --config my_import_config.json
+QueryPort.exe import --schema CRM_SCHEMA --config config.json
 ```
 
 ---
