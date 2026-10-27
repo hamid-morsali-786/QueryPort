@@ -351,6 +351,77 @@ class TestImportConfigAndArgs(unittest.TestCase):
             content = bad_file.read_text(encoding="utf-8")
             self.assertIn("ORA-00001", content)
 
+    def test_import_single_file_parallel_mock(self):
+        from unittest.mock import MagicMock, patch
+        from import_sql import import_single_file_parallel
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / "large.csv"
+            lines = ["ID,NAME"] + [f"{i},Item_{i}" for i in range(1, 11)]
+            csv_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+            mock_conn = MagicMock()
+            mock_cursor = MagicMock()
+            mock_conn.__enter__.return_value = mock_conn
+            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+
+            table_meta = {"ID": {"data_type": "NUMBER"}, "NAME": {"data_type": "VARCHAR2"}}
+            settings = {
+                "database": {"user": "APP_USER"},
+                "commit_mode": "batch",
+                "batch_size": 5,
+                "existing_data_action": "append",
+                "on_error": "abort",
+                "bad_rows_dir": str(Path(tmpdir) / "errors")
+            }
+
+            with patch("import_sql.create_import_connection", return_value=mock_conn):
+                res = import_single_file_parallel(csv_path, "TEST_TABLE", table_meta, settings, workers=2, rac_services=[], chunk_size=4)
+
+            self.assertEqual(res["imported"], 10)
+            self.assertEqual(res["read"], 10)
+            self.assertEqual(res["failed"], 0)
+
+    def test_run_import_multi_file_parallel(self):
+        from unittest.mock import MagicMock, patch
+        from import_sql import run_import
+        with tempfile.TemporaryDirectory() as tmpdir:
+            f1 = Path(tmpdir) / "01_T1.csv"
+            f1.write_text("ID\n1\n2\n", encoding="utf-8")
+            f2 = Path(tmpdir) / "02_T2.csv"
+            f2.write_text("ID\n10\n20\n", encoding="utf-8")
+
+            mock_conn = MagicMock()
+            mock_cursor = MagicMock()
+            mock_conn.__enter__.return_value = mock_conn
+            mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+
+            # fetch_schema_metadata result:
+            mock_cursor.fetchall.return_value = [
+                ("T1", "ID", "NUMBER", "N", None),
+                ("T2", "ID", "NUMBER", "N", None)
+            ]
+
+            settings = {
+                "input_path": tmpdir,
+                "database": {"user": "APP_USER", "schema": "APP_USER"},
+                "commit_mode": "batch",
+                "batch_size": 100,
+                "existing_data_action": "append",
+                "on_error": "abort",
+                "bad_rows_dir": str(Path(tmpdir) / "errors"),
+                "dry_run": False,
+                "concurrency": {
+                    "workers": 2,
+                    "chunk_size": 25000,
+                    "rac_services": ["NODE1_SRV", "NODE2_SRV"]
+                }
+            }
+
+            with patch("import_sql.create_import_connection", return_value=mock_conn):
+                code = run_import(settings)
+
+            self.assertEqual(code, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

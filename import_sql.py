@@ -5,8 +5,10 @@ and bulk inserts data using oracledb Thin mode with configurable commit strategi
 """
 
 import argparse
+import concurrent.futures
 import csv
 import datetime
+import itertools
 import json
 import re
 import sys
@@ -460,6 +462,105 @@ def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict,
         }
 
 
+def import_single_file_parallel(file_path: Path, table_name: str, table_meta: dict, settings: dict, workers: int, rac_services: list[str], chunk_size: int) -> dict:
+    """
+    Import a single CSV file in parallel chunks across worker threads.
+    Pre-truncates table once if configured, then streams chunks to ThreadPoolExecutor.
+    """
+    t0 = time.time()
+    tbl_upper = table_name.upper()
+    existing_action = settings.get("existing_data_action", "append")
+    on_error = settings.get("on_error", "abort")
+    bad_rows_dir = Path(settings.get("bad_rows_dir", "import_errors"))
+    base_db = settings["database"]
+
+    # Pre-truncate once single-threaded if requested
+    if existing_action == "truncate":
+        with create_import_connection(base_db) as init_conn:
+            with init_conn.cursor() as cur:
+                cur.execute(f"TRUNCATE TABLE {tbl_upper}")
+                init_conn.commit()
+
+    shared_logger = None
+    chunks_gen = stream_csv_chunks(file_path, chunk_size=chunk_size)
+    try:
+        first_chunk = next(chunks_gen)
+    except StopIteration:
+        return {"read": 0, "imported": 0, "failed": 0, "skipped": False, "duration": time.time() - t0}
+
+    headers, _, _ = first_chunk
+    if on_error == "skip_and_log":
+        shared_logger = ThreadSafeErrorLogger(bad_rows_dir / f"{tbl_upper}_rejected.csv", headers)
+
+    cols_str = ", ".join(headers)
+    binds_str = ", ".join(f":{i+1}" for i in range(len(headers)))
+    insert_sql = f"INSERT INTO {tbl_upper} ({cols_str}) VALUES ({binds_str})"
+
+    total_read = 0
+    total_imported = 0
+    total_failed = 0
+
+    def process_chunk(chunk_idx: int, raw_rows: list[list[Any]], worker_idx: int) -> tuple[int, int, int]:
+        cfg = get_worker_connection_config(base_db, rac_services, worker_idx)
+        w_read = len(raw_rows)
+        w_imported = 0
+        w_failed = 0
+        cleaned_batch = []
+        for row in raw_rows:
+            cleaned_row = []
+            for idx, col_name in enumerate(headers):
+                val = row[idx] if idx < len(row) else None
+                col_type = table_meta.get(col_name, {}).get("data_type")
+                cleaned_row.append(clean_cell_value(val, col_type))
+            cleaned_batch.append(cleaned_row)
+
+        with create_import_connection(cfg) as w_conn:
+            with w_conn.cursor() as cur:
+                try:
+                    cur.executemany(insert_sql, cleaned_batch)
+                    w_conn.commit()
+                    w_imported += len(cleaned_batch)
+                except Exception as exc:
+                    if on_error == "abort":
+                        w_conn.rollback()
+                        raise
+                    for r_idx, r in enumerate(cleaned_batch):
+                        try:
+                            cur.execute(insert_sql, r)
+                            w_conn.commit()
+                            w_imported += 1
+                        except Exception as r_exc:
+                            w_failed += 1
+                            if shared_logger:
+                                shared_logger.log(chunk_idx * chunk_size + r_idx + 1, r_exc, raw_rows[r_idx])
+                    w_conn.commit()
+        return (w_read, w_imported, w_failed)
+
+    try:
+        all_chunks = itertools.chain([first_chunk], chunks_gen)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = []
+            for w_idx, (hdrs, c_idx, c_rows) in enumerate(all_chunks):
+                fut = executor.submit(process_chunk, c_idx, c_rows, w_idx)
+                futures.append(fut)
+            for fut in concurrent.futures.as_completed(futures):
+                r_read, r_imp, r_fail = fut.result()
+                total_read += r_read
+                total_imported += r_imp
+                total_failed += r_fail
+    finally:
+        if shared_logger:
+            shared_logger.close()
+
+    return {
+        "read": total_read,
+        "imported": total_imported,
+        "failed": total_failed,
+        "skipped": False,
+        "duration": time.time() - t0
+    }
+
+
 def run_import(settings: dict) -> int:
     """Execute complete import workflow with pre-validation and execution reporting."""
     input_path = Path(settings["input_path"])
@@ -469,12 +570,19 @@ def run_import(settings: dict) -> int:
         return 0
 
     target_schema = settings["database"].get("schema") or settings["database"].get("user")
+    concurrency = settings.get("concurrency", {"workers": 1, "chunk_size": 25000, "rac_services": []})
+    workers = concurrency.get("workers", 1)
+    rac_services = concurrency.get("rac_services", [])
+    chunk_size = concurrency.get("chunk_size", 25000)
+
     print("=== QueryPort - Oracle CSV Importer ===")
     print(f"Target Path    : {input_path} ({len(file_plan)} file(s))")
     print(f"Target Schema  : {target_schema}")
     print(f"Commit Mode    : {settings['commit_mode']} (Batch: {settings['batch_size']})")
     print(f"Existing Data  : {settings['existing_data_action']}")
     print(f"Error Strategy : {settings['on_error']}")
+    if workers > 1:
+        print(f"Concurrency    : {workers} workers (Chunk: {chunk_size:,} | RAC Services: {len(rac_services)})")
     print("--------------------------------------------------------------------------------")
 
     try:
@@ -511,18 +619,55 @@ def run_import(settings: dict) -> int:
         total_failed = 0
         t_start = time.time()
 
-        for idx, (fpath, tbl) in enumerate(file_plan, 1):
-            print(f"Processing [{idx:02d}/{len(file_plan):02d}]: {fpath.name} -> {tbl} ...")
+        if workers > 1 and len(file_plan) == 1:
+            fpath, tbl = file_plan[0]
             tbl_meta = meta.get(tbl, {})
-            res = import_single_file(conn, fpath, tbl, tbl_meta, settings)
+            print(f"Parallel Ingestion ({workers} workers): {fpath.name} -> {tbl} ...")
+            res = import_single_file_parallel(fpath, tbl, tbl_meta, settings, workers, rac_services, chunk_size)
             res["table"] = tbl
             res["file"] = fpath.name
             summary_results.append(res)
             total_read += res["read"]
             total_imported += res["imported"]
             total_failed += res["failed"]
-            status = "SKIPPED" if res["skipped"] else f"{res['imported']:,} rows imported"
+            status = f"{res['imported']:,} rows imported"
             print(f"    -> Result: {status} in {res['duration']:.2f}s")
+        elif workers > 1 and len(file_plan) > 1:
+            print(f"Parallel Ingestion ({workers} workers) across {len(file_plan)} files ...")
+            def process_file_worker(item_idx: int, file_tuple: tuple[Path, str]) -> dict:
+                fp, tb = file_tuple
+                w_idx = item_idx - 1
+                t_meta = meta.get(tb, {})
+                w_cfg = get_worker_connection_config(settings["database"], rac_services, w_idx)
+                with create_import_connection(w_cfg) as w_conn:
+                    r = import_single_file(w_conn, fp, tb, t_meta, settings)
+                    r["table"] = tb
+                    r["file"] = fp.name
+                    return r
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(workers, len(file_plan))) as executor:
+                futures = {executor.submit(process_file_worker, idx, fp): fp for idx, fp in enumerate(file_plan, 1)}
+                for fut in concurrent.futures.as_completed(futures):
+                    res = fut.result()
+                    summary_results.append(res)
+                    total_read += res["read"]
+                    total_imported += res["imported"]
+                    total_failed += res["failed"]
+                    status = "SKIPPED" if res["skipped"] else f"{res['imported']:,} rows imported"
+                    print(f"    -> [{res['table']}] Result: {status} in {res['duration']:.2f}s")
+        else:
+            for idx, (fpath, tbl) in enumerate(file_plan, 1):
+                print(f"Processing [{idx:02d}/{len(file_plan):02d}]: {fpath.name} -> {tbl} ...")
+                tbl_meta = meta.get(tbl, {})
+                res = import_single_file(conn, fpath, tbl, tbl_meta, settings)
+                res["table"] = tbl
+                res["file"] = fpath.name
+                summary_results.append(res)
+                total_read += res["read"]
+                total_imported += res["imported"]
+                total_failed += res["failed"]
+                status = "SKIPPED" if res["skipped"] else f"{res['imported']:,} rows imported"
+                print(f"    -> Result: {status} in {res['duration']:.2f}s")
 
         t_total = time.time() - t_start
 
