@@ -223,8 +223,8 @@ QueryPort.exe --mode export
 # پیش‌نمایش تعداد رکوردهای فایل خاص بدون استخراج:
 QueryPort.exe --path test_sql/01_CUSTOMERS_AND_ACCOUNTS.sql --dry-run
 
-# استخراج پوشه به هر دو قالب CSV و SQL INSERT به همراه موازی‌سازی چندتردی:
-QueryPort.exe --path sql_queries --format both --batch-size 10000 --workers 4
+# استخراج پوشه به هر دو قالب CSV و اسکریپت استاندارد INSERT:
+QueryPort.exe --path sql_queries --format both --batch-size 10000
 ```
 
 ![QueryPort Parallel Export](docs/assets/terminal_export.svg)

@@ -318,8 +318,8 @@ Usage: `QueryPort.exe import [options]` or `QueryPort.exe --mode import [options
 # Preview row counts without exporting:
 QueryPort.exe --path test_sql --dry-run
 
-# Parallel export to both CSV and Excel formatted XLSX:
-QueryPort.exe --path sql_queries --format both --batch-size 10000 --workers 4
+# Export to both CSV and Oracle INSERT script:
+QueryPort.exe --path sql_queries --format both --batch-size 10000
 ```
 
 ![QueryPort Parallel Export](docs/assets/terminal_export.svg)

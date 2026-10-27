@@ -101,6 +101,12 @@ def parse_import_args(args: list[str] | None = None) -> argparse.Namespace:
         dest="rac_services",
         help="Comma-separated list of Oracle RAC service names for workload routing."
     )
+    parser.add_argument(
+        "--intra-table",
+        action="store_true",
+        dest="intra_table",
+        help="Enable parallel intra-table chunk streaming for large CSV files."
+    )
     return parser.parse_args(args)
 
 
@@ -741,7 +747,7 @@ def run_import(settings: dict) -> int:
         print("--------------------------------------------------------------------------------")
         print(f"{'No.':<4} {'Table Name':<25} {'Read Rows':<12} {'Imported':<12} {'Failed':<10} {'Duration':<10}")
         print("--------------------------------------------------------------------------------")
-        for idx, r in enumerate(summary_results, 1):
+        for idx, r in enumerate(sorted(summary_results, key=lambda x: str(x.get("table", ""))), 1):
             dur_str = f"{r['duration']:.2f}s"
             status_read = f"{r['read']:,}" if not r["skipped"] else "SKIPPED"
             print(f"{idx:02d}   {r['table']:<25} {status_read:<12} {r['imported']:<12,} {r['failed']:<10,} {dur_str:<10}")

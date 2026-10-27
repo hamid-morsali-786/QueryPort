@@ -30,6 +30,10 @@ class TestImportConfigAndArgs(unittest.TestCase):
         args = parse_import_args(["--dry-run"])
         self.assertTrue(args.dry_run)
 
+    def test_intra_table_cli_flag_parsed(self):
+        args = parse_import_args(["--intra-table"])
+        self.assertTrue(args.intra_table)
+
     def test_resolve_concurrency_settings_defaults(self):
         cfg = {"database": {"user": "APP_USER"}}
         args = parse_import_args([])
