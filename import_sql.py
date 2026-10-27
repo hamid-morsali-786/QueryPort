@@ -174,27 +174,9 @@ def clean_cell_value(val: str, col_type: str | None = None) -> Any:
 
 
 def stream_csv_batches(file_path: Path, batch_size: int = 5000) -> Generator[tuple[list[str], list[list[Any]]], None, None]:
-    """
-    Generator streaming CSV rows in chunked batches of batch_size with O(1) memory.
-    Yields (headers, list_of_raw_rows).
-    """
-    with open(file_path, "r", encoding="utf-8-sig", newline="", errors="replace") as f:
-        reader = csv.reader(f)
-        try:
-            raw_headers = next(reader)
-        except StopIteration:
-            return
-        headers = [h.strip().upper() for h in raw_headers]
-        batch = []
-        for row in reader:
-            if not row or all(cell.strip() == "" for cell in row):
-                continue
-            batch.append(row)
-            if len(batch) >= batch_size:
-                yield headers, batch
-                batch = []
-        if batch:
-            yield headers, batch
+    """Generator streaming CSV rows in chunked batches of batch_size with O(1) memory."""
+    for headers, _, batch in stream_csv_chunks(file_path, chunk_size=batch_size):
+        yield headers, batch
 
 
 def stream_csv_chunks(file_path: Path, chunk_size: int = 25000) -> Generator[tuple[list[str], int, list[list[Any]]], None, None]:
@@ -417,20 +399,19 @@ def import_single_file(conn, file_path: Path, table_name: str, table_meta: dict,
                 created_logger = True
             local_logger.log(count_read - len(raw_batch) + row_idx + 1, exc, raw_batch[row_idx])
 
+        col_types = None
         for headers, raw_batch in stream_csv_batches(file_path, batch_size):
             count_read += len(raw_batch)
             cols_str = ", ".join(headers)
             binds_str = ", ".join(f":{i+1}" for i in range(len(headers)))
             insert_sql = f"INSERT INTO {tbl_upper} ({cols_str}) VALUES ({binds_str})"
+            if col_types is None:
+                col_types = [table_meta.get(col, {}).get("data_type") for col in headers]
 
-            cleaned_batch = []
-            for row in raw_batch:
-                cleaned_row = []
-                for idx, col_name in enumerate(headers):
-                    val = row[idx] if idx < len(row) else None
-                    col_type = table_meta.get(col_name, {}).get("data_type")
-                    cleaned_row.append(clean_cell_value(val, col_type))
-                cleaned_batch.append(cleaned_row)
+            cleaned_batch = [
+                [clean_cell_value(row[idx] if idx < len(row) else None, col_types[idx]) for idx in range(len(headers))]
+                for row in raw_batch
+            ]
 
             if commit_mode == "row":
                 for row_idx, row in enumerate(cleaned_batch):
@@ -519,6 +500,7 @@ def import_single_file_parallel(file_path: Path, table_name: str, table_meta: di
     cols_str = ", ".join(headers)
     binds_str = ", ".join(f":{i+1}" for i in range(len(headers)))
     insert_sql = f"INSERT INTO {tbl_upper} ({cols_str}) VALUES ({binds_str})"
+    col_types = [table_meta.get(col, {}).get("data_type") for col in headers]
 
     task_queue: queue.Queue = queue.Queue(maxsize=max(workers * 2, 4))
     abort_event = threading.Event()
@@ -543,8 +525,8 @@ def import_single_file_parallel(file_path: Path, table_name: str, table_meta: di
                         try:
                             w_read = len(raw_rows)
                             cleaned_batch = [
-                                [clean_cell_value(row[idx] if idx < len(row) else None, table_meta.get(col, {}).get("data_type"))
-                                 for idx, col in enumerate(headers)]
+                                [clean_cell_value(row[idx] if idx < len(row) else None, col_types[idx])
+                                 for idx in range(len(headers))]
                                 for row in raw_rows
                             ]
                             try:

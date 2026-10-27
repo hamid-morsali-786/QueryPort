@@ -173,35 +173,6 @@ def format_oracle_literal(value: any) -> str:
     return f"'{escaped_str}'"
 
 
-def export_to_csv(rows_generator, columns: list[str], output_path: Path) -> int:
-    """Write rows to a CSV file with UTF-8 BOM encoding."""
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    count = 0
-    with open(output_path, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(columns)
-        for row in rows_generator:
-            writer.writerow(row)
-            count += 1
-    return count
-
-
-def export_to_insert(rows_generator, columns: list[str], table_name: str, output_path: Path) -> int:
-    """Write rows as SQL INSERT statements ending with COMMIT;."""
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    count = 0
-    col_str = ", ".join(columns)
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(f"-- Exported data for table: {table_name}\n")
-        f.write("SET DEFINE OFF;\n\n")
-        for row in rows_generator:
-            val_str = ", ".join(format_oracle_literal(v) for v in row)
-            f.write(f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str});\n")
-            count += 1
-        f.write("\nCOMMIT;\n")
-    return count
-
-
 def create_connection(db_config: dict):
     """Establish a connection to Oracle Database using oracledb Thin mode."""
     import oracledb
@@ -349,12 +320,11 @@ def main(argv: list[str] | None = None) -> int:
         return import_sql.main(args_list[1:])
     if "--mode" in args_list:
         idx = args_list.index("--mode")
-        if idx + 1 < len(args_list) and args_list[idx + 1].lower() == "import":
+        mode = args_list.pop(idx + 1).lower() if idx + 1 < len(args_list) else ""
+        args_list.pop(idx)
+        if mode == "import":
             import import_sql
-            remaining = args_list[:idx] + args_list[idx + 2:]
-            return import_sql.main(remaining)
-        elif idx + 1 < len(args_list) and args_list[idx + 1].lower() == "export":
-            args_list = args_list[:idx] + args_list[idx + 2:]
+            return import_sql.main(args_list)
 
     args = parse_args(args_list)
     try:

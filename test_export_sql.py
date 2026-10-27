@@ -152,13 +152,17 @@ class TestExporters(unittest.TestCase):
         self.assertEqual(format_oracle_literal(dec), "123.45")
 
     def test_csv_export_with_bom(self):
-        from export_sql import export_to_csv
-        cols = ["ID", "TITLE"]
-        rows = [[1, "پارامتر یک"], [2, "Test, with comma"]]
+        from unittest.mock import MagicMock
+        from export_sql import process_query
+        mock_cursor = MagicMock()
+        mock_cursor.description = [("ID",), ("TITLE",)]
+        mock_cursor.fetchmany.side_effect = [[[1, "پارامتر یک"], [2, "Test, with comma"]], []]
         with tempfile.TemporaryDirectory() as tmpdir:
-            out_file = Path(tmpdir) / "test.csv"
-            count = export_to_csv(iter(rows), cols, out_file)
+            target_dir = Path(tmpdir)
+            query_info = (1, "TEST", "SELECT ID, TITLE FROM TEST")
+            count = process_query(mock_cursor, query_info, "csv", target_dir)
             self.assertEqual(count, 2)
+            out_file = target_dir / "01_TEST.csv"
             content_bytes = out_file.read_bytes()
             # UTF-8 BOM check
             self.assertTrue(content_bytes.startswith(b'\xef\xbb\xbf'))
@@ -166,13 +170,17 @@ class TestExporters(unittest.TestCase):
             self.assertIn("پارامتر یک", text)
 
     def test_insert_export_format(self):
-        from export_sql import export_to_insert
-        cols = ["ID", "CODE", "TITLE"]
-        rows = [[1, "B01", "بانک 'ملی'"]]
+        from unittest.mock import MagicMock
+        from export_sql import process_query
+        mock_cursor = MagicMock()
+        mock_cursor.description = [("ID",), ("CODE",), ("TITLE",)]
+        mock_cursor.fetchmany.side_effect = [[[1, "B01", "بانک 'ملی'"]], []]
         with tempfile.TemporaryDirectory() as tmpdir:
-            out_file = Path(tmpdir) / "test_insert.sql"
-            count = export_to_insert(iter(rows), cols, "BANKPARAMETERS", out_file)
+            target_dir = Path(tmpdir)
+            query_info = (1, "BANKPARAMETERS", "SELECT ID, CODE, TITLE FROM BANKPARAMETERS")
+            count = process_query(mock_cursor, query_info, "insert", target_dir)
             self.assertEqual(count, 1)
+            out_file = target_dir / "01_BANKPARAMETERS_insert.sql"
             text = out_file.read_text(encoding="utf-8")
             self.assertIn("SET DEFINE OFF;", text)
             self.assertIn("INSERT INTO BANKPARAMETERS (ID, CODE, TITLE) VALUES (1, 'B01', 'بانک ''ملی''');", text)
